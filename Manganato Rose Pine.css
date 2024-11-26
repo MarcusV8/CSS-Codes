@@ -1,0 +1,249 @@
+/* ==UserStyle==
+@name           Manganato Rose Pine
+@namespace      github.com/openstyles/stylus
+@version        1.0
+@description    Rose Pine Style for Manganato and Chapmanganato.
+@author         Me
+==/UserStyle== */
+@-moz-document domain("chapmanganato.to") {
+    :root {
+        --color-1: #232136 !important;
+        --color-2: #393552 !important;
+        --color-3: #E0DEF4 !important;
+        --color-4: #000000 !important;
+    }
+
+    body,
+    html {
+        background: none !important;
+        background-color: var(--color-1) !important;
+    }
+    
+    .body-site,
+    .container-footer-content,
+    .panel-chapter-info-bot,
+    .panel-navigation {
+        background-color: var(--color-1);
+    }
+
+    .panel-navigation .navi-change-chapter-btn a {
+        background: var(--color-1) !important;
+    }
+
+    .advanced-search-tool-title,
+    .container-footer-content,
+    .container-header-top,
+    .content-homepage-more,
+    .header-menu,
+    .panel-chapter-comment,
+    .panel-logo-chapter,
+    .panel-newest-more,
+    .pn-category-story-title {
+        background-color: var(--color-2) !important;
+    }
+
+    .content-homepage-title,
+    .panel-advanced-search-tool .advanced-search-tool-genres-item,
+    .panel-search-story .search-story-item .item-author,
+    .panel-search-story .search-story-item .item-time,
+    .item_name,
+    .item_author,
+    .item_chapter,
+    .panel-chapter-info-top,
+    h1,
+    h2,
+    h3,
+    .server-image-caption,
+    .panel-category .pn-category-row a,
+    .panel-story-chapter-list .chapter-name {
+        color: var(--color-3) !important;
+    }
+
+    input,
+    select,
+    textarea {
+        background-color: var(--color-1) !important;
+        border: 1px solid var(--color-4) !important;
+        color: var(--color-3) !important;
+    }
+
+    .logo, .panel-chapter-info-top .server-image-btn {
+        background: var(--color-2) !important;
+        margin-right: 0px !important;
+    }
+
+    .container-silder .silder-title,
+    .content-genres-item,
+    .panel-advanced-search-tool .advanced-search-tool-content,
+    .panel-breadcrumb,
+    .panel-category .pn-category-row,
+    .panel-content-homepage,
+    .panel-fb-comment .fb-comment-title,
+    .panel-genres-list,
+    .panel-navigation,
+    .panel-newest,
+    .panel-newest-content,
+    .panel-newest-more,
+    .panel-newest-title,
+    .panel-page-number .page-blue,
+    .panel-page-number .page-select,
+    .panel-story-chapter-list,
+    .panel-story-info,
+    .panel-topview-item,
+    .panel-topview-title,
+    .pn-category-row,
+    .switch-front,
+    .user-bookmark-content .user-bookmark-item,
+    .user-name,
+    #SearchResult ul,
+    #search-footer, .panel-chapter-info-top .server-image-btn.isactive {
+        background-color: var(--color-2) !important;
+        color: var(--color-3) !important;
+    }
+
+    .slide-caption {
+        background: var(--color-2) !important;
+        color: var(--color-3) !important;
+        opacity: 90%;
+    }
+
+    #panel-description-linear i {
+        background: none;
+    }
+
+    .container-silder {
+        border-top: none;
+    }
+}
+
+@-moz-document domain("manganato.com") {
+    :root {
+        --color-1: #232136 !important;
+        --color-2: #393552 !important;
+        --color-3: #E0DEF4 !important;
+        --color-4: #000000 !important;
+    }
+    
+    body,
+    html {
+        background: none !important;
+        background-color: var(--color-1) !important;
+    }
+
+    .body-site {
+        background-color: var(--color-1);
+    }
+
+    .container-footer-content,
+    .container-header-top,
+    .panel-chapter-comment,
+    .pn-category-story-title,
+    .panel-newest-more,
+    .advanced-search-tool-title,
+    .content-homepage-more,
+    .header-menu {
+        background-color: var(--color-2) !important;
+    }
+
+    .content-homepage-title,
+    .panel-advanced-search-tool .advanced-search-tool-genres-item,
+    .panel-search-story .search-story-item .item-author,
+    .panel-search-story .search-story-item .item-time,
+    .item_name,
+    .item_author,
+    .item_chapter,
+    h1  {
+        color: var(--color-3) !important;
+    }
+
+    .container-header-top .box-user-options .user-name {
+        background-color: var(--color-1) !important;
+        color: var(--color-3) !important;
+    }
+    input,
+    select,
+    textarea {
+        background-color: var(--color-1) !important;
+        border: 1px solid var(--color-4) !important;
+        color: var(--color-3) !important;
+    }
+
+
+    .logo {
+        background: var(--color-2) !important;
+        margin-right: 0px !important;
+    }
+
+    a,
+    .container-main-left>div,
+    .container-silder .silder-title,
+    .content-genres-item,
+    #SearchResult ul,
+    #search-footer,
+    .panel-advanced-search-tool .advanced-search-tool-content,
+    .panel-breadcrumb,
+    .panel-category .pn-category-row,
+    .panel-chapter-info-bot,
+    .panel-content-homepage,
+    .panel-fb-comment .fb-comment-title,
+    .panel-genres-list,
+    .panel-navigation,
+    .panel-navigation .navi-change-chapter-btn a,
+    .panel-newest,
+    .panel-newest-content,
+    .panel-newest-more,
+    .panel-newest-title,
+    .panel-page-number .page-blue,
+    .panel-search-story,
+    .panel-story-chapter-list,
+    .panel-story-info,
+    .panel-topview-item,
+    .panel-topview-title,
+    .pn-category-row,
+    .user-bookmark-content .user-bookmark-item {
+        background: var(--color-2) !important;
+        color: var(--color-3) !important;
+    }
+
+
+    #mystickytooltip,
+    #tooltip .tooltip_main .tooltip_detail_left p,
+    #tooltip .tooltip_summary,
+    #tooltip h3 {
+        background: var(--color-2) !important;
+        color: var(--color-3) !important;
+    }
+
+    .slide-caption {
+        background: var(--color-2) !important;
+        color: var(--color-3) !important;
+        opacity: 90%;
+    }
+
+    .container-silder {
+        border-top: none;
+    }
+
+     .panel-page-number .page-select {
+        background: var(--color-1) !important;
+    }
+    
+    .panel-content-genres .content-genres-item .genres-item-description .genres-item-description-linear {
+        background: none;
+    }
+}
+
+@-moz-document domain("facebook.com") {
+    html,
+    body,
+    :not([style*="background-color:"]) {
+        background-color: #232136 !important;
+    }
+
+    html,
+    body,
+    :not([style*="color:"]),
+    .sr-reader *:not([class*="sr-pivot"]) {
+        color: #E0DEF4 !important;
+    }
+}
