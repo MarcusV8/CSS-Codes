@@ -1,0 +1,220 @@
+/* ==UserStyle==
+@name           tudocelular.com
+@namespace      github.com/openstyles/stylus
+@version        1.0.0
+@description    A new userstyle
+@author         Me
+==/UserStyle== */
+@-moz-document domain("tudocelular.com") {
+    :root {
+        --color-1: #232136 !important;
+        --color-2: #393552 !important;
+        --color-3: #E0DEF4 !important;
+        --color-4: #000000 !important;
+    }
+    body,
+    html {
+        background: none !important;
+    }
+
+    li.cpu strong,
+    #topnav::before,
+    #topnav::after,
+    .modelo_item .details .features .camera,
+    .modelo_item .details .features .cpu,
+    .modelo_item .details .features .display,
+    .modelo_item .details .features .flechita,
+    .pholder,
+    #comparabtn,
+    #compara .pholder .phone_added,
+    #main_footer .social a,
+    #bannerRight300x250,
+    .bbcode_container div.bbcode_quote,
+    .popupbody,
+    .group_squares>a,
+    .title_bar h3,
+    #bottomnav label::after,
+    #related_notices,
+    #comments,
+    #important_notizes,
+    .movingbox, .box {
+        background: none !important;
+    }
+
+    #ajax_right,
+    .bar_gray,
+    body .bordes_container::after,
+    body .bordes_container::before,
+    #loginform,
+    #toolbar,
+    .content,
+    #newslist>*,
+    #newslist, .wide_old {
+        background: var(--color-1)!important;
+    }
+
+    #compara,
+    .compare-tool,
+    .submenu div.content,
+    #video_comparision,
+    #forum_login,
+    .forumhead,
+    .floatcontainer,
+    #home_links,
+    .body_wrapper,
+    #home_links ul .selected,
+    .postbitlegacy .postfoot .textcontrols a.newreply,
+    #yui-gen15,
+    .textcontrol,
+    .news-list-item,
+    .title-bar,
+    #left_menu,
+    .quickreply,
+    .group_squares .buttons .buton,
+    .popup-wrapper,
+    .rc-anchor-normal,
+    .ui-widget-content,
+    .title_bar {
+        background: var(--color-2)!important;
+    }
+
+    #bottomnav a,
+    .title_newlist_normal .title_new,
+    .modelo_item a,
+    .threadtitle2-fbh,
+    #important_notizes p,
+    .newlist_icos .title_new,
+    .top_toolbar .link_job,
+    .versus_phones>div p,
+    #main_footer .container p,
+    .info-fbh,
+    .lastpostdate2-fbh,
+    .container_gray,
+    .widget_post_content,
+    #sidebar_container .blocksubhead,
+    .wgo_block .blocksubhead,
+    #threadpagestats,
+    .breadcrumb .navbit.lastnavbit span,
+    .footer_time,
+    .below_body .time,
+    .time,
+    .postbit .posttitle,
+    .postbitlegacy .title,
+    #postpagestats_above,
+    .medium_notice .details_notice p,
+    .textblock,
+    #notice_content p,
+    .textblock h2,
+    #tc_posts,
+    .big_notice2 .details_notice p,
+    .commenttext-fbh,
+    .news-list-item .title,
+    .news-list-item .metadata .date,
+    .shade,
+    .circle_features li,
+    .circle_features li strong,
+    .price-form-wrapper .price-alert-head-text,
+    .newlist_normal p,
+    .title_link, .threadtitle , .title, body a, #titolo_esteso h2, .newlist_normal em {
+        color: var(--color-3)!important;
+    }
+
+    .container,
+    #bottomnav,
+    #main_footer,
+    #autocomplete2,
+    .autocomplete ul,
+    #versus,
+    .btn_more,
+    #compara #comparabtn a,
+    .compare-tool #comparabtn a,
+    #autocomplete1,
+    .modelo_item .details .features,
+    #compare_container2,
+    #compare_container1,
+    .sp,
+    .big_phone,
+    .row_titles .phone_column_features,
+    #thumbs_videos,
+    #thumbs_videos p,
+    #floatbar .bubble_costo span,
+    #title_video,
+    .threadlisthead,
+    .posthead,
+    .userinfo,
+    .postdetails,
+    .postrow.has_after_content,
+    blockquote,
+    .postbody, #themesbox {
+        background: var(--color-1)!important;
+        color: var(--color-3)!important;
+    }
+    #topnav>ul>li>a,
+    #forum,
+    #topnav,
+    .tile,
+    .label_links a,
+    .label_links a.active,
+    .title_newlist_normal .comment-gray,
+    .apps,
+    .autocomplete ul li:nth-child(2n+1),
+    .gray_comments::before,
+    .gray_comments,
+    .phone_column_features li,
+    #sidebar_container .blockrow,
+    #sidebar_container>ul,
+    .forumhead+.childforum .L2:first-child .forumrow,
+    .forumhead+.L2 .forumrow,
+    .forumbit_nopost .forumbit_nopost .forumrow,
+    .forumbit_post .forumrow,
+    .wgo_block .section,
+    .navlinks,
+    .wgo_block .blockhead,
+    .pagination span a.popupctrl,
+    .pagination span a,
+    .threadbit .nonsticky,
+    .threadbit .discussionrow,
+    .toolsmenu div,
+    .threadbit .alt,
+    #yui-gen12,
+    #yui-gen14,
+    .popupbody li a,
+    .threadbit .sticky,
+    #yui-gen177,
+    .esteso,
+    .attiva,
+    .inattiva,
+    .bar_thumb a,
+    .side_thumb,
+    #tabsbar div,
+    .popupctrl,
+    .navpopupbody li.optionlabel,
+    .label,
+    .title_bar .inactive, h3, .homesobox, #notice_content .item_compra, .item_compra .shop_places, #register_form, #login_form  {
+        background: var(--color-2)!important;
+        color: var(--color-3)!important;
+    }
+    #simple_slider_cycle-next,
+    #simple_slider_cycle-prev {
+        background-color: var(--color-2)!important;
+        opacity: 100% !important;
+    }
+
+    .title_bar h3 {
+        border-left: none !important;
+    }
+
+    input,
+    textarea,
+    select {
+        background-color: var(--color-1) !important;
+        color: var(--color-3) !important;
+        border: 1px solid var(--color-4) !important;
+    }
+    .slideshow_container .cycle-overlay.overlay_bottom,
+    .slideshow_container .cycle-overlay.overlay_bottom .dncomment {
+        background: var(--color-2)!important;
+        color: var(--color-3)!important;
+        opacity: 85%;
+    }
+}
