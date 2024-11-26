@@ -1,0 +1,135 @@
+/* ==UserStyle==
+@name           Blogspot Rose Pine
+@namespace      github.com/openstyles/stylus
+@version        1.0.0
+@description    A new userstyle
+@author         Me
+==/UserStyle== */
+@-moz-document domain("blogspot.com"),
+domain("wordpress.com") {
+    :root {
+        --color-1: #232136 !important;
+        /* Cor do fundo principal */
+        --color-2: #393552 !important;
+        /* Cor de destaque secundário */
+        --color-3: #E0DEF4 !important;
+        /* Cor do texto */
+        --color-4: #000000 !important;
+        /* Preto */
+    }
+
+    body,
+    html {
+        background: none !important;
+        background-color: var(--color-1) !important;
+    }
+    p,
+    span,
+    a,
+    li,
+    ul,
+    h3.post-title a,
+    h2.date-header,
+    .Header,
+    .date-header span,
+    .navigation,
+    .post-outer-container .date-outer,
+    .Header h1,
+    .main-inner .widget h2.date-header,
+    .post-footer,
+    .item-view .bg-photo-container+.centered .centered-bottom .post-wrapper,
+    .centered-top,
+    .post-outer:first-child,
+    #sidebar_top,
+    #sidebar_bottom,
+    #Label1,
+    #PageList1,
+    #PopularPosts1,
+    #PopularPosts2,
+    #BlogArchive1,
+    #BlogList1,
+    #BlogList2,
+    #BlogSearch1,
+    #blog-pager,
+    #Followers1,
+    #Text1,
+    #Text2,
+    #Profile1,
+    #comment-editor,
+    #comments,
+    #Stats1 {
+        color: var(--color-3) !important;
+        background-color: var(--color-1) !important;
+    }
+
+    input,
+    textarea,
+    select {
+        background-color: var(--color-1) !important;
+        color: var(--color-3) !important;
+        border: 1px solid var(--color-4) !important;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        color: var(--color-3) !important;
+        background: none !important;
+    }
+
+    .content,
+    .fauxborder-left,
+    .date-posts,
+    .page_body,
+    .Blog .blog-posts .post-outer-container,
+    .centered-top-container.sticky,
+    .main-inner .column-left-inner,
+    .main-inner .column-right-inner,
+    .main-inner .column-left-inner,
+    .column-right-inner,
+    .main-inner .fauxcolumn-right-outer .fauxcolumn-inner,
+    .main-inner .fauxcolumn-left-outer .fauxcolumn-inner,
+    .comments .comment-thread.inline-thread {
+        background-color: var(--color-1) !important;
+    }
+
+    .post-outer,
+    .date-outer,
+    .content-inner,
+    .item-view .bg-photo {
+        background: none
+    }
+
+    .content-inner,
+    .variant-bold {
+        background: none !important;
+        background-color: var(--color-1) !important;
+    }
+
+    .MsoNormal {
+        color: var(--color-3) !important;
+    }
+
+    /*     Wordpress Changes    */
+    .wp-site-blocks {
+        background-color: var(--color-1) !important;
+    }
+    #comment-form__verbum {
+        background-color: var(--color-1) !important;
+    }
+    #comment-submit {
+        color: var(--color-3) !important;
+        background-color: var(--color-1) !important;
+    }
+    #marketingbar {
+        background: none;
+        background-color: var(--color-1) !important;
+        color: var(--color-3) !important;
+    }
+    #actionbar {
+        background: none !important;
+    }
+}
