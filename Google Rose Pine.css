@@ -1,0 +1,245 @@
+/* ==UserStyle==
+@name           google.com
+@namespace      github.com/openstyles/stylus
+@version        1.0.0
+@description    A new userstyle
+@author         Me
+==/UserStyle== */
+@-moz-document domain("google.com") {
+    :root {
+        --color-1: #232136 !important;
+        --color-2: #393552 !important;
+        --color-3: #E0DEF4 !important;
+        --color-4: #000000 !important;
+    }
+
+    body,
+    .c93Gbe,
+    #gb,
+    .sfbg,
+    .appbar,
+    .BToiNc,
+    .CybWFf,
+    .Lu57id,
+    .f6F9Be,
+    .iORcjf,
+    .Pqkn2e,
+    .ojE3Fb .q0vns a.fl,
+    .V3FYCf,
+    .T4LgNb,
+    .Lxqe2c,
+    .JtdFQe,
+    .srKDX,
+    .OJeuxf .kHtcsd,
+    .u32vCb .wIjY0d,
+    .GKS7s,
+    .PHj8of.J1AhHd,
+    .i0X6df,
+    .f6GA0,
+    .CacfB,
+    .Ua7Yuf,
+    .glue-header__container,
+    .gads-in-page-banner__bg-color--blue,
+    .famfbb,
+    .b8ZsAd.RZbh7,
+    .ipnSKb .PDUXZ,
+    .fKmH1e,
+    .cF4V5c,
+    .VvrH3b,
+    .lF2Cpe.dm7YTc .zQTmif,
+    .KcXNxb,
+    .ENXZm,
+    .utX6Qe,
+    .e1AOyf {
+        background-color: var(--color-1) !important;
+    }
+
+
+    .RNNXgb,
+    .aajZCb,
+    input[type="submit"],
+    .A8xzab,
+    .LFAdvb,
+    .Q1bVje,
+    .pkgtHd,
+    .fxvkXe,
+    .p8Jhnd,
+    .UMrnmb-vyw7Sc-Psmogf,
+    .K63yde,
+    .ea0Lbe,
+    .UivI7b,
+    .nTN4Wc,
+    .dm7YTc .qNlNJb.mImKeb,
+    .dm7YTc .qNlNJb.NCtmc .NfZthc,
+    .AkxBw,
+    .htyage,
+    .tOzDHb,
+    .ZB3Ebc {
+        background-color: var(--color-2) !important;
+    }
+
+    .sATSHe,
+    .FoJoyf.w8qArf,
+    .LrzXr,
+    .fl,
+    .RES9jf,
+    .mWcf0e,
+    .pEZBSb .i3LlFf,
+    .xe8e1b .LC20lb,
+    .KwU3F,
+    .xSQxL,
+    .auw0zb,
+    .j04ED,
+    .S4TQId,
+    h3,
+    .hgKElc,
+    .L3Ezfd,
+    .cHaqb,
+    .BwPElf .toI8Rb,
+    .GKS7s,
+    .bqW4cb,
+    .UU8K7,
+    .dOwBOc td,
+    .wM6W7d,
+    .ClJ9Yb,
+    .gb_W,
+    .gb_A,
+    .pHiOh,
+    a.pHiOh,
+    .uU7dJb,
+    .ZeVBtc,
+    .DV7the,
+    .glue-font-smoothing,
+    .glue-headline,
+    .GI74Re,
+    .ynAwRc,
+    .NUnG9d,
+    .rbYSKb,
+    .AaVjTc a:link,
+    .AaVjTc a:link,
+    .cmlJmd,
+    .dm7YTc .JkHSnc,
+    .dm7YTc .ddlw3d,
+    body.dm7YTc .aqpp1c:not(:disabled),
+    .sh-t__title-pdp,
+    .TZeISb,
+    .H98nB,
+    .g9WBQb,
+    .sh-ds__desc,
+    .g1lvWe,
+    .qIEPib,
+    .uYNZm,
+    .AMxILd,
+    .sPPcBf,
+    ._-i1,
+    ._-i3,
+    ._-i6,
+    .vzbr7d,
+    .Yy9sbf,
+    .drzWO,
+    .E5ziJ,
+    .dOwBOc th,
+    a.sh-osd__sort,
+    a.sh-osd__sort:link,
+    .YTkbnd,
+    .YTkbnd:visited,
+    .YTkbnd:link,
+    .x1zPJe,
+    .svTb8c div,
+    .mv7LYc,
+    c-wiz,
+    .pKBk1e,
+    .wzUQBf,
+    .AHyjFe,
+    .v2aRuf,
+    .Yfwt5,
+    .TU4qge,
+    .xJvDsc .ZvmM7,
+    .lNAoAf,
+    .F22TKd,
+    .YMlKec,
+    .W8knGc,
+    .TwnKPb,
+    .Iap8Fc,
+    .ZvmM7,
+    .PxxJne,
+    .stxVfe .GqNdIe,
+    .tOzDHb,
+    .ZB3Ebc .ZAGvjd,
+    .NrF3hd,
+    .CrPloe,
+    .T35sFe,
+    .NTyFPb,
+    .ims1Qe,
+    .vdK5ke .GqNdIe,
+    .XpM3J,
+    .ssJ7i {
+        color: var(--color-3) !important;
+    }
+
+    .a,
+    .HG5ZQb,
+    .dm7YTc .jKHa4e,
+    .dm7YTc.lF2Cpe .QVEiob,
+    .lF2Cpe.dm7YTc .YtXOzd {
+        background-color: var(--color-1) !important;
+        color: var(--color-3) !important;
+    }
+
+    .LLtSOc,
+    .vIifob,
+    .ZFiwCf,
+    .S8ee5,
+    .DuIE5,
+    .NcDEu,
+    .SIA5Pb,
+    .REySof.T9jMmf,
+    .FNMYpd,
+    .cB9M7,
+    .Qwbd3,
+    .dm7YTc .bfSRxb,
+    .dm7YTc .Ccj79,
+    .lF2Cpe.dm7YTc .KrPhCd .CGNRMc,
+    body.dm7YTc .P77izf,
+    .dm7YTc .b42OPe,
+    .dm7YTc .pGxpHc .VISqTe,
+    .dm7YTc .yPI8Rb,
+    .dm7YTc .Ly25Ed,
+    .dm7YTc .isdDAc,
+    .dm7YTc .sQBzPb,
+    .dm7YTc .ryo59b,
+    .dm7YTc .i0Zvib,
+    .dm7YTc .ndIcDe,
+    .dm7YTc .ME1Kbf,
+    .dm7YTc .WeBXWd,
+    .dm7YTc .Yonv .jBmls,
+    .WNN1b,
+    .sh-dp__cont,
+    .gp0lg,
+    ._-ja,
+    .dG2XIf,
+    .in7vHe,
+    .v4ge2e,
+    body:where(:not(.S7wXqe):not([data-theme="dark"]):not([data-theme="light"])) .dmaMHc,
+    :where(body:not(.S7wXqe):not([data-theme="dark"]):not([data-theme="light"])) .ZGEB9c:not(.P0ukfb),
+    .plvncb,
+    .e1Tapf:not(:disabled),
+    .KdK6Xc,
+    .vReuC,
+    .mLoZRc {
+        background-color: var(--color-2) !important;
+        color: var(--color-3) !important;
+        border-radius: 15px;
+    }
+
+    .dm7YTc .dSBEqc {
+        background-image: linear-gradient(to right, rgba(31, 31, 31, 0), #393552 4px) !important;
+    }
+    .RDmXvc {
+        background: none !important;
+    }
+    .ml2Uge {
+        background-image: none;
+        background-color: var(--color-1) !important;
+    }
+}
