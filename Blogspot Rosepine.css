@@ -5,131 +5,124 @@
 @description    A new userstyle
 @author         Me
 ==/UserStyle== */
-@-moz-document domain("blogspot.com"),
-domain("wordpress.com") {
-    :root {
-        --color-1: #232136 !important;
-        /* Cor do fundo principal */
-        --color-2: #393552 !important;
-        /* Cor de destaque secundário */
-        --color-3: #E0DEF4 !important;
-        /* Cor do texto */
-        --color-4: #000000 !important;
-        /* Preto */
-    }
+@-moz-document domain("blogspot.com") {
+               /* Blogspot */
+                                                  /*========================================*/
+                                                  /*            Generic Elements            */
+                                                  /*========================================*/                                     
+          :root {
+               --C1: #191724;
+               --C2: #232136;
+               --C3: #393552;
+               --C4: #E0DEF4;
+               --B1: 1px solid var(--C4);
+               --BR1: 15px;
+               --BR2: 5px;
+          }
 
-    body,
-    html {
-        background: none !important;
-        background-color: var(--color-1) !important;
-    }
-    p,
-    span,
-    a,
-    li,
-    ul,
-    h3.post-title a,
-    h2.date-header,
-    .Header,
-    .date-header span,
-    .navigation,
-    .post-outer-container .date-outer,
-    .Header h1,
-    .main-inner .widget h2.date-header,
-    .post-footer,
-    .item-view .bg-photo-container+.centered .centered-bottom .post-wrapper,
-    .centered-top,
-    .post-outer:first-child,
-    #sidebar_top,
-    #sidebar_bottom,
-    #Label1,
-    #PageList1,
-    #PopularPosts1,
-    #PopularPosts2,
-    #BlogArchive1,
-    #BlogList1,
-    #BlogList2,
-    #BlogSearch1,
-    #blog-pager,
-    #Followers1,
-    #Text1,
-    #Text2,
-    #Profile1,
-    #comment-editor,
-    #comments,
-    #Stats1 {
-        color: var(--color-3) !important;
-        background-color: var(--color-1) !important;
-    }
+             *  {
+               color: var(--C4) !important;
+          }
+          input,
+          textarea,
+          select {
+               background-color: var(--C1) !important;
+               border: var(--B1) !important;
+               border-radius: var(--BR2);
+          }
 
-    input,
-    textarea,
-    select {
-        background-color: var(--color-1) !important;
-        color: var(--color-3) !important;
-        border: 1px solid var(--color-4) !important;
-    }
+          html,
+          body {
+               background: var(--C2);
+          }
+          
+          header {
+               margin-top: 15px;
+          }
+          span, h1, b {
+              background: inherit !important;
+          }
+                                                   /*========================================*/
+                                                   /*          Individual Elements           */
+                                                   /*========================================*/
+    
+        /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/  Background  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
 
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        color: var(--color-3) !important;
-        background: none !important;
-    }
+     h2, a.readmore, .byline.post-labels a, div.jump-link1, .snippet-thumbnail .post-header, h3.title {
+          background: var(--C1) !important;
+     }
 
-    .content,
-    .fauxborder-left,
-    .date-posts,
-    .page_body,
-    .Blog .blog-posts .post-outer-container,
-    .centered-top-container.sticky,
-    .main-inner .column-left-inner,
-    .main-inner .column-right-inner,
-    .main-inner .column-left-inner,
-    .column-right-inner,
-    .main-inner .fauxcolumn-right-outer .fauxcolumn-inner,
-    .main-inner .fauxcolumn-left-outer .fauxcolumn-inner,
-    .comments .comment-thread.inline-thread {
-        background-color: var(--color-1) !important;
-    }
+     #blog-container, #contentwrap, #main-wrap1, #sidebarbottom-wrap2, #sidebartop-wrap, #sidebartop-wrap2, #slider, #wrapper, .bg-photo-overlay, .inner, .main-and-sidebar, .main-content, .main-inner .column-left-inner, .main-inner .column-right-inner, .main-nav-wrapper, .tl-footer-branding {
+          background: var(--C2);
+     }
+          
+     #bottombar, #footer, #footer-wrapper, #header, #header .header-bar, #header .header-drawer, #header-blog, #header-navigation, #header-wrap, #NavMenu, #nav, #navcontainer, #navbarbwrap, #page_body .FeaturedPost, #related-wrap, #search, #sidebar_top, #slider .post-info-wrapper, #topnav, .about-author, .Blog .blog-posts .post-outer-container, .box, .centered-top-container, .centered-top-container.sticky, .footer-outer, .item .post, .lightbox-panel .lightbox-inner, .menu-secondary-container, .nav-wrapper, .navbarbwrap, .overview-panel .article, .overview-panel .overview-inner, .post-item-inner, .sidebar .widget, .sidebar-container, .sidebar-container .navigation, .sidebar-container .sidebar_bottom, .site-info-container, .sticky .centered-top, .title-wrap {
+          background: var(--C3) !important;
+     }
+          
+     #blog-pager, #blog-wrapper, #body-wrapper, #breadcrumb, #comments, #container, #content-wrapper, #header-wrapper, #lower, #l_sidebar ul li, #main, #main-top, #main-wrapper, #outer-wrapper, #r_sidebar ul li, #sidebar1, #sidebar2, #ty_footer, #wrap, #wrap2, #wrapper-bg, .bajada, .blog-pager-newer-link, .blog-pager-older-link, .content-inner, .content-outer, .content-outer .content-cap-top, .date-outer, .entry-header, .fauxcolumn-inner, .fauxcolumn-outer .fauxborder-left, .fauxcolumn-outer .fauxborder-right, .feed-view .post-wrapper .post, .footer-fauxborder-left, .gsc-control-cse, .gsc-input-box, .header-outer, .home-link, .Image img, .main-inner .column-center-outer, .main-outer, .post-footer, .post-outer, .post-wrapper, .row.row-small, .separator, .site-headerbwrap, .stylebox .widget-content, .tabs-inner .widget ul, .tl-topfeatured, .widget.Blog .post.no-featured-image, .xRandomPost, .yt-simple-endpoint.style-scope.yt-formatted-string, .bot-bar-menu, ul.post-nav,
 
-    .post-outer,
-    .date-outer,
-    .content-inner,
-    .item-view .bg-photo {
-        background: none
-    }
+     div[style*="background: rgb(255, 255, 255)"], div[style*="background-color: #fffafa"], div[style*="background-color: white"], p[style*="background: white"], p[style*="background-color: #fffafa"], p[style*="background-color: white"], table[style*="background-colorw: white"], td[style*="background: repeat rgb(211, 223, 238)"], tr[bgcolor*="#E6E8FA"] {
+          background: none !important;
+      }
+          
+       /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/  Widgets  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
 
-    .content-inner,
-    .variant-bold {
-        background: none !important;
-        background-color: var(--color-1) !important;
-    }
+      div[data-version="1"] {
+          background-color: var(--C3) !important;
+          border-radius: var(--BR1) !important;
+          border: var(--B1) !important;
+          padding: 5px;
+          overflow: hidden; 
+          text-align: center;
+     }
+     .date-header, h2[class*="title"], .sidebar .widget h2 {
+          background: var(--C1) !important;
+          border-radius: var(--BR2) !important;
+          width: fit-content;
+          text-align: center;
+          margin: auto !important;
+     }
+     #Navbar1 {
+          background: inherit !important;
+          border: none !important;
+          border-radius: 0px !important;
+     }
+     #Header1, #header {
+          width: fit-content;
+          margin: auto !important;
+          text-align: center;
+     }
+     .date-outer, h3.title {
+          text-align: center;
+     }
 
-    .MsoNormal {
-        color: var(--color-3) !important;
-    }
-
-    /*     Wordpress Changes    */
-    .wp-site-blocks {
-        background-color: var(--color-1) !important;
-    }
-    #comment-form__verbum {
-        background-color: var(--color-1) !important;
-    }
-    #comment-submit {
-        color: var(--color-3) !important;
-        background-color: var(--color-1) !important;
-    }
-    #marketingbar {
-        background: none;
-        background-color: var(--color-1) !important;
-        color: var(--color-3) !important;
-    }
-    #actionbar {
-        background: none !important;
-    }
+      /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/  Secondary Elements  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+    
+     .attribution, .bg-photo-container, .tabs-outer {
+          display: none;
+     }
+     .date-outer {
+          padding: 10px;
+     }
+     .gsc-input-box, .main-outer, .post-outer, .site-mainbwrap .content-areabwrap {
+          border: none;
+     }
+     .item-view .bg-photo-container + .centered .centered-bottom .post-wrapper {
+          margin: 0;
+     }
 }
+@-moz-document domain("blogger.com") {
+          /* Blogger Plugin*/
+     html,
+     body,
+     :not([style*="background-color:"]) {
+          background-color: #393552 !important;
+     }
+     html,
+     body,
+     :not([style*="color:"]),
+     .sr-reader *:not([class*="sr-pivot"]) {
+          color: #E0DEF4 !important;
+     }
+}    
