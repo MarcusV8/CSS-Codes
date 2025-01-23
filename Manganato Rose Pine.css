@@ -1,249 +1,284 @@
 /* ==UserStyle==
 @name           Manganato Rose Pine
-@namespace      github.com/openstyles/stylus
+@namespace      https://github.com/MarcusV8/CSS-Codes
 @version        1.0
 @description    Rose Pine Style for Manganato and Chapmanganato.
 @author         Me
 ==/UserStyle== */
-@-moz-document domain("chapmanganato.to") {
-    :root {
-        --color-1: #232136 !important;
-        --color-2: #393552 !important;
-        --color-3: #E0DEF4 !important;
-        --color-4: #000000 !important;
-    }
 
-    body,
-    html {
-        background: none !important;
-        background-color: var(--color-1) !important;
-    }
-    
-    .body-site,
-    .container-footer-content,
-    .panel-chapter-info-bot,
-    .panel-navigation {
-        background-color: var(--color-1);
-    }
+@-moz-document domain("chapmanganato.to"), domain("manganato.com") {
+     :root {
+          --C1: #191724;
+          --C2: #232136;
+          --C3: #393552;
+          --C4: #E0DEF4;
+          --B1: 1px solid var(--C4);
+          --BR1: 15px;
+          --BR2: 5px;
+     }
+     * {
+          color: var(--C4) !important
+     }
+     body,
+     html {
+          background: var(--C2) !important;
+     }
+     input,
+     select,
+     textarea {
+          background-color: var(--C1) !important;
+          border: 1px solid var(--C4) !important;
+          border-radius: var(--BR1);
+     }
+     img:not([src*=".svg"]) {
+          border-radius: var(--BR1);
+      }
+                                            
+     /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/ Background /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+                    
+     /* Header */ .container-header-top, .header-menu, .logo,
+     /* Panel */ .panel-content-homepage, .content-homepage-more.a-h, .panel-topview-item,
+     /* Sub Panels */ .panel-category .pn-category-row,
+     /* Hover */ .stickytooltip, #SearchResult ul {
+          background-color: var(--C3) !important;
+     }
+      .container-header .logo {
+          margin-right: 0px;
+          width: 230px;
+     }
+          .container-footer-content, #panel-description-linear i {
+          display: none !important;
+     }
+          .select {
+             background-color: var(--C3) !important  
+          }
+     /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/ Title /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+                     
+      .container-header-top .box-user-options .user-name,
+      .pn-category-story-title, .panel-content-homepage .content-homepage-title, .panel-topview-title, #search-footer{
+            background-color: var(--C1) !important;
+      }
+      .content-homepage-title {
+          margin: 0 !important;
+          padding: 10px !important;
+      }
+    /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ Borders ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ */
 
-    .panel-navigation .navi-change-chapter-btn a {
-        background: var(--color-1) !important;
-    }
-
-    .advanced-search-tool-title,
-    .container-footer-content,
-    .container-header-top,
-    .content-homepage-more,
-    .header-menu,
-    .panel-chapter-comment,
-    .panel-logo-chapter,
-    .panel-newest-more,
-    .pn-category-story-title {
-        background-color: var(--color-2) !important;
-    }
-
-    .content-homepage-title,
-    .panel-advanced-search-tool .advanced-search-tool-genres-item,
-    .panel-search-story .search-story-item .item-author,
-    .panel-search-story .search-story-item .item-time,
-    .item_name,
-    .item_author,
-    .item_chapter,
-    .panel-chapter-info-top,
-    h1,
-    h2,
-    h3,
-    .server-image-caption,
-    .panel-category .pn-category-row a,
-    .panel-story-chapter-list .chapter-name {
-        color: var(--color-3) !important;
-    }
-
-    input,
-    select,
-    textarea {
-        background-color: var(--color-1) !important;
-        border: 1px solid var(--color-4) !important;
-        color: var(--color-3) !important;
-    }
-
-    .logo, .panel-chapter-info-top .server-image-btn {
-        background: var(--color-2) !important;
-        margin-right: 0px !important;
-    }
-
-    .container-silder .silder-title,
-    .content-genres-item,
-    .panel-advanced-search-tool .advanced-search-tool-content,
-    .panel-breadcrumb,
-    .panel-category .pn-category-row,
-    .panel-content-homepage,
-    .panel-fb-comment .fb-comment-title,
-    .panel-genres-list,
-    .panel-navigation,
-    .panel-newest,
-    .panel-newest-content,
-    .panel-newest-more,
-    .panel-newest-title,
-    .panel-page-number .page-blue,
-    .panel-page-number .page-select,
-    .panel-story-chapter-list,
-    .panel-story-info,
-    .panel-topview-item,
-    .panel-topview-title,
-    .pn-category-row,
-    .switch-front,
-    .user-bookmark-content .user-bookmark-item,
-    .user-name,
-    #SearchResult ul,
-    #search-footer, .panel-chapter-info-top .server-image-btn.isactive {
-        background-color: var(--color-2) !important;
-        color: var(--color-3) !important;
-    }
-
-    .slide-caption {
-        background: var(--color-2) !important;
-        color: var(--color-3) !important;
-        opacity: 90%;
-    }
-
-    #panel-description-linear i {
-        background: none;
-    }
-
-    .container-silder {
-        border-top: none;
-    }
+     .pn-category-story-title, .content-homepage-title, .user-name, .panel-topview-title, .container.container-header, .panel-content-homepage {
+          border: var(--B1);
+     }
+     .pn-category-story-title, .content-homepage-title, .user-name, .panel-topview-title {
+          border-radius: var(--BR2);
+     }
+     .container.container-header, .panel-content-homepage {
+          border-radius: var(--BR1);
+     }
+     .pn-category-row.pn-category-row-border:first-of-type, .panel-topview-item:nth-of-type(1) {
+          border-top: var(--B1) !important;
+          border-radius: 15px 15px 0 0;
+     }
+     .pn-category-row:last-of-type, .panel-topview-item:nth-of-type(10), .content-homepage-more.a-h, .panel-newest-more.a-h {
+          border-radius: 0 0 15px 15px;
+          border-bottom: var(--B1) !important;
+     }
+     .pn-category-row, .content-homepage-more.a-h, .panel-newest-more.a-h, .panel-topview-item a {
+          border-left: var(--B1);
+          border-right: var(--B1);
+     }
+     .pn-category-row {
+          width: calc(100% - 26px);
+     }
+     .content-homepage-more.a-h, .panel-newest-more.a-h {
+          background-color: var(--C3) !important;
+     }
+     .container-main-left, .container-main-right {
+          overflow: unset;
+          margin-right: 5px;
+     }
+     /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/ Description Page and Search /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+     
+     .panel-story-info, .panel-story-chapter-list, .panel-search-story {
+          background-color: var(--C3) !important;         
+     }
+     .fb-comment-title.fb-comment-title-show, .panel-advanced-search-tool .advanced-search-tool-title, .panel-list-comment {
+          background-color: var(--C1) !important;                   
+     }
 }
-
 @-moz-document domain("manganato.com") {
-    :root {
-        --color-1: #232136 !important;
-        --color-2: #393552 !important;
-        --color-3: #E0DEF4 !important;
-        --color-4: #000000 !important;
-    }
-    
-    body,
-    html {
-        background: none !important;
-        background-color: var(--color-1) !important;
-    }
+          /* Manganato */
+          
+     /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/ Bookmark  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
 
-    .body-site {
-        background-color: var(--color-1);
-    }
-
-    .container-footer-content,
-    .container-header-top,
-    .panel-chapter-comment,
-    .pn-category-story-title,
-    .panel-newest-more,
-    .advanced-search-tool-title,
-    .content-homepage-more,
-    .header-menu {
-        background-color: var(--color-2) !important;
-    }
-
-    .content-homepage-title,
-    .panel-advanced-search-tool .advanced-search-tool-genres-item,
-    .panel-search-story .search-story-item .item-author,
-    .panel-search-story .search-story-item .item-time,
-    .item_name,
-    .item_author,
-    .item_chapter,
-    h1  {
-        color: var(--color-3) !important;
-    }
-
-    .container-header-top .box-user-options .user-name {
-        background-color: var(--color-1) !important;
-        color: var(--color-3) !important;
-    }
-    input,
-    select,
-    textarea {
-        background-color: var(--color-1) !important;
-        border: 1px solid var(--color-4) !important;
-        color: var(--color-3) !important;
-    }
-
-
-    .logo {
-        background: var(--color-2) !important;
-        margin-right: 0px !important;
-    }
-
-    a,
-    .container-main-left>div,
-    .container-silder .silder-title,
-    .content-genres-item,
-    #SearchResult ul,
-    #search-footer,
-    .panel-advanced-search-tool .advanced-search-tool-content,
-    .panel-breadcrumb,
-    .panel-category .pn-category-row,
-    .panel-chapter-info-bot,
-    .panel-content-homepage,
-    .panel-fb-comment .fb-comment-title,
-    .panel-genres-list,
-    .panel-navigation,
-    .panel-navigation .navi-change-chapter-btn a,
-    .panel-newest,
-    .panel-newest-content,
-    .panel-newest-more,
-    .panel-newest-title,
-    .panel-page-number .page-blue,
-    .panel-search-story,
-    .panel-story-chapter-list,
-    .panel-story-info,
-    .panel-topview-item,
-    .panel-topview-title,
-    .pn-category-row,
-    .user-bookmark-content .user-bookmark-item {
-        background: var(--color-2) !important;
-        color: var(--color-3) !important;
-    }
-
-
-    #mystickytooltip,
-    #tooltip .tooltip_main .tooltip_detail_left p,
-    #tooltip .tooltip_summary,
-    #tooltip h3 {
-        background: var(--color-2) !important;
-        color: var(--color-3) !important;
-    }
-
-    .slide-caption {
-        background: var(--color-2) !important;
-        color: var(--color-3) !important;
-        opacity: 90%;
-    }
-
-    .container-silder {
-        border-top: none;
-    }
-
-     .panel-page-number .page-select {
-        background: var(--color-1) !important;
-    }
-    
-    .panel-content-genres .content-genres-item .genres-item-description .genres-item-description-linear {
-        background: none;
-    }
+     .user-bookmark-content {
+          margin-bottom: 0;
+     }
+     div[style*="float: left"] {
+          display: none;
+     }
+     .user-bookmark-content .user-bookmark-item, .panel-breadcrumb {
+       background: var(--C3);
+       margin: 0 !important;
+       border: var(--B1);
+       border-radius: 15px;
+     }
+     .user-bookmark-page-number a.select, .user-bookmark-page-number a.go-p, .user-bookmark-page-number a.go-p-end, .user-bookmark-page-number .group-qty a, .user-bookmark-page-number a {
+          background: var(--C1) ;
+     }
+     a[rel="nofollow"][style*="color: #e12a2a"] {
+          filter: invert(1) brightness(4.5) hue-rotate(85deg);
+     }
+     .btn-remove {
+          filter: brightness(1.8);
+     }
+  /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/ Panels And Titles  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+          
+     .panel-newest-content {
+          background-color: var(--C3) !important;
+          border: solid white 1px;
+          border-bottom: 0px;
+          }
+     .panel-newest-title,  .silder-title {
+          background-color: var(--C1) !important;
+          border: var(--B1);
+          border-radius: var(--BR2);
+     }
+     .panel-topview, .container-silder, .panel-newest, .panel-category, body {
+          border-top: none;
+     }    
+     .slide-caption {
+          background: var(--C3) !important;
+          opacity: 90%;
+          border: var(--B1);
+          border-radius: 15px 15px 0 0;
+     }
 }
-
-@-moz-document domain("facebook.com") {
-    html,
-    body,
-    :not([style*="background-color:"]) {
-        background-color: #232136 !important;
-    }
-
-    html,
-    body,
-    :not([style*="color:"]),
-    .sr-reader *:not([class*="sr-pivot"]) {
-        color: #E0DEF4 !important;
-    }
+@-moz-document domain("chapmanganato.to") {
+         /* Chapmanganato */
+           
+           /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/ Miscellaneous  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+           
+     .server-image {
+          display: block ruby;
+          margin-top: var(--BR1);
+     }
+     .panel-logo-chapter, .panel-breadcrumb, .panel-navigation, .panel-chapter-info-top {
+               background-color: var(--C3) !important;
+     }   
+      .panel-fb-comment .fb-comment-title span {
+          margin-left: 450px;
+     }
+     .panel-fb-comment .fb-comment-title, #top, .label-switch .switch-front {
+          border-radius: var(--BR1) ;
+          background-color: var(--C1);
+     }
+     .server-image-btn.a-h, .panel-chapter-info-top .server-image-btn.isactive {
+          border-radius: var(--BR2) ;
+          background-color: var(--C1);
+     }
+     .container-chapter-reader img {
+          min-width: 1000px;
+     }
+           /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/ New Design  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+           
+     .body-site>.container:nth-of-type(1):not(.container-header) {
+          display: grid;
+          max-width: 1600px !important;
+          grid-template-columns: 130px 1fr 1fr;
+          grid-template-areas: "logo info breadcrumb" "logo info navigation";
+          margin: 0;
+          overflow: visible;
+     }
+     .panel-logo-chapter {
+          grid-area: logo;
+          border-radius: var(--BR2);
+          width: 100%;
+          border: var(--B1);
+          margin-bottom: 0;
+          display: flex;
+          align-items: center;
+     }
+     .panel-chapter-info-top {
+          grid-area: info;
+          border-radius: var(--BR2);
+          margin: 0;
+          border: var(--B1);
+     }
+     .body-site>.container:nth-of-type(1) .panel-breadcrumb {
+          grid-area: breadcrumb;
+          border-radius: var(--BR2);
+          height: 100px;
+          width: 710px;
+          overflow: hidden;
+          border: var(--B1);
+          margin: 0;
+     }
+     .body-site>.container:nth-of-type(1) .panel-navigation {
+          grid-area: navigation;
+          border-radius: 5px;
+          width: 710px;
+          height: 40px;
+          border: var(--B1);
+          margin: 0;
+     }
+     .panel-chapter-info-top h1 {
+          font-size: 15pt;
+     }
+     .panel-navigation .navi-change-chapter-btn a,
+     .panel-navigation .navi-change-chapter {
+          border-radius: var(--BR2);
+          background-color: var(--C1) !important;
+     }
+     /* Inferior Part */
+     div>a>img[style*="float: left"] {
+          overflow: visible;
+          position: absolute;
+          margin-left: -430px !important;
+          border: var(--B1);
+          border-radius: var(--BR1);
+          width: 150px !important;
+          height: 135px !important;
+     }
+     div[style*="max-height: 380px"] {
+          margin: 0 auto !important;
+     }
+     .container:not([class*="container-"]) {
+          display: grid; 
+          width: auto; 
+          margin: 0; 
+          grid-template-areas: "nav" "crumb" "comments"; 
+          grid-template-columns: 1fr; overflow: visible;
+     }
+     .body-site>.container:not(:first-of-type)>.panel-navigation {
+          grid-area: nav;
+          width: 710px;
+          height: 40px;
+          margin-left: 490px;
+          border: var(--B1);
+          border-radius: var(--BR2);
+     }
+     .body-site>.container:not(:first-of-type)>.panel-breadcrumb {
+          grid-area: crumb;
+          width: 710px;
+          height: 85px;
+          margin-left: 490px;
+          border: var(--B1);
+          border-radius: var(--BR2);
+     }
+     .panel-chapter-comment {
+          grid-area: comments;
+          margin-left: 150px;
+          border: var(--B1);
+          border-radius: var(--BR1);
+     }  
+     .panel-chapter-info-bot,
+     .server-image-caption {
+          display: none;
+     }
+}
+@-moz-document url-prefix("https://www.facebook.com/plugins") {
+     /* Facebook Plugin*/
+     html,body, :not([style*="color:"]) {
+          color: #fff !important;
+          background-color: #393552;
+     }
 }
