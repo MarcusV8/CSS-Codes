@@ -1,0 +1,105 @@
+    @-moz-document domain("feeder.co") {
+          /* Feeder */
+         :root {
+              --C1: #191724;
+              --C2: #232136;
+              --C3: #393552;
+              --C4: #E0DEF4;
+              --B1: 1px solid var(--C4);
+              --BR1: 15px;
+              --BR2: 5px;
+         }
+         * {
+              color: var(--C4) !important;
+         }
+         /*      First Page         */
+         .sidebar-navigation--inner,
+         .__c4b1f,
+         .__3e339,
+         .page-scroll-container,
+         .bar,
+         .f--button.secondary,
+         .f--button.large,
+         .__15e08.odd {
+              background-color: var(--C2) !important;
+         }
+         .sidebar-nav-tab.active,
+         .__e5b91,
+         .__e52e2,
+         .__e52e2 .option.current,
+         .__e52e2 .option:active,
+         .__e52e2 .option:hover,
+         .toolbar-sort-area-right,
+         .__6e528 .inner-bubble,
+         .__ea860.show-self,
+         .__15e08,
+         .tooltip {
+              background-color: var(--C3) !important;
+         }
+         .__fb4b1 textarea,
+         .__5893c input,
+         .__5893c textarea {
+              background-color: var(--C3) !important;
+         }
+         .__e52e2 .option path,
+         .__d71fb,
+         .__d71fb .sidebar-nav-tab.sidebar-nav-tab--button .sidebar-nav--icon path,
+         .__1567a.line path {
+              stroke: var(--C4) !important;
+         }
+         .sidebar-nav-tab:not(.stroke-icon, .active, .active-option) path {
+              fill: var(--C4) !important;
+         }
+         /* Other Sections  */
+         .container,
+         .f--button.destroy {
+              background-color: var(--C1) !important;
+         }
+         .__98bec,
+         .__f97c6:not(.tile, [feeder-is-drop-over]),
+         .__25af9 .feed-workspace--feed-list .top-bar .multi-select-options,
+         .__ddc35.active {
+              background-color: var(--C3) !important;
+         }
+         .__8108f .dropdown-button--buttons,
+         .__ddc35 {
+              background-color: var(--C3) !important;
+         }
+         .__f97c6 {
+              border-top-color: var(--C4) !important;
+         }
+         .__83412::after {
+              background: none !important;
+         }
+         /* Options */
+         .__333dc .theme-chooser--theme.theme-choose--is-selected,
+         .__73a95 .page-style-dialog--mode.is-active,
+         .__c5aaa,
+         .__ed7b6 tbody tr:nth-child(2n+1) td,
+         .__ed7b6.notifications-table th.notification-table-feed,
+         .__03b22,
+         .__cc527 {
+              background-color: var(--C2) !important;
+         }
+         .__ed7b6 tbody tr:nth-child(2n) td,
+         .__ed7b6 th {
+              background-color: var(--C3) !important;
+         }
+         .__8e112,
+         .__8e112 .header-area {
+              background-color: var(--C3) !important;
+         }
+         /* Add feed */
+         .__45fc5.feed-card,
+         .__a79f3,
+         .feed-back-prompt,
+         .__f1d1d,
+         .__f1d1d .header-area {
+              background-color: var(--C3) !important;
+         }
+         .__5f52e .consume-main-content,
+         .__5581a,
+         .header {
+              background-color: var(--C2) !important;
+         }
+    }
