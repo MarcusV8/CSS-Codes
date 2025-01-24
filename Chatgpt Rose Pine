@@ -1,0 +1,70 @@
+ /* ==UserStyle==
+@name           Chatgpt Rose pine
+@namespace      https://github.com/MarcusV8/CSS-Codes
+@version        1
+@description    Autodescritivo
+@author         Me
+==/UserStyle== */
+
+ @-moz-document domain("chatgpt.com") {
+      /* Chatgpt*/
+      :root {
+           --C1: #191724;
+           --C2: #232136;
+           --C3: #393552;
+           --C4: #E0DEF4;
+           --B1: 1px solid var(--C4);
+           --BR1: 15px;
+           --BR2: 5px;
+      }
+      * {
+           color: var(--C4) !important;
+      }
+      
+      
+          /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/  Main Page  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+    
+      body,
+      .bg-token-main-surface-primary {
+           background-color: var(--C2) !important;
+      }
+      .bg-token-sidebar-surface-primary {
+           background-color: var(--C1);
+      }
+          /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/  Sub Menu  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+    
+      .max-h-\[var\(--radix-dropdown-menu-content-available-height\)\].overflow-y-auto.py-2.min-w-fit,
+      #radix-\:raj\:,
+      #radix-\:r44\: {
+           background-color: var(--C3) !important;
+      }
+           /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/  Buttons  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+                    
+       .btn-secondary,
+      .items-center.justify-start.rounded-xl.p-1.flex,
+      .relative.p-1.rounded-sm.flex.items-center.justify-center.bg-token-main-surface-primary.text-token-text-primary.h-8.w-8,
+      .dark\:disabled\:text-token-main-surface-secondary:disabled:is(.dark *), .dark\:bg-white:is(.dark *),
+      .bg-token-main-surface-secondary,
+      [dir="ltr"] .right-1\/2,
+      .group.relative.flex.h-\[42px\].items-center.gap-1\.5.rounded-full.border.border-token-border-light.px-3.py-2.text-start.text-\[13px\].shadow-xxs.transition.enabled\:hover\:bg-token-main-surface-secondary.disabled\:cursor-not-allowed.xl\:gap-2.xl\:text-\[14px\] {
+           background-color: var(--C1) !important;
+      }
+           /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/  Message & Secondary Elements  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+      
+      .bg-token-message-surface,
+      .flex.items-center.rounded.bg-token-sidebar-surface-primary.px-2.font-sans.text-xs.text-token-text-secondary.dark\:bg-token-main-surface-secondary,
+      #composer-background {
+           background-color: var(--C3) !important;
+      }
+      .flex.items-center.text-token-text-secondary.px-4.py-2.text-xs.font-sans.justify-between.rounded-t-md.h-9.bg-token-sidebar-surface-primary.dark\:bg-token-main-surface-secondary.select-none {
+           background-color: var(--C1) !important;
+      }
+      
+            /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/  Declutter Page  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+                          
+      .group.flex.gap-2.p-2\.5.text-sm.cursor-pointer.focus\:ring-0.radix-disabled\:pointer-events-none.radix-disabled\:opacity-50.items-center.hover\:bg-token-sidebar-surface-secondary.screen-arch\:px-2.screen-arch\:py-1\.5.screen-arch\:min-h-\[47px\].rounded-lg.m-0.px-2,
+      [dir="ltr"] .\@lg\/thread\:left-0,
+      .md\:px-\[60px\] {
+           display: none;
+      }
+ }
