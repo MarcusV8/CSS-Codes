@@ -1,4 +1,11 @@
- @-moz-document domain("tudocelular.com") {
+      /* ==UserStyle==
+@name           Tudocelular Rose pine
+@namespace      https://github.com/MarcusV8/CSS-Codes
+@version        1
+@description    Tudo Celular Rose Pine
+@author         MarcusV8
+==/UserStyle== */
+@-moz-document domain("tudocelular.com") {
          /* Tudo Celular*/
          :root {
               --C1: #191724;
