@@ -1,0 +1,156 @@
+/* ==UserStyle==
+@name                    Rosepine Facebook
+@namespace               https://github.com/MarcusV8/CSS-Codes
+@version                 1.7
+@description             Rose Pine Facebook
+@author                  MarcusV8
+@preprocessor            stylus
+
+==/UserStyle== */
+@-moz-document regexp("^(?=.*\\b(?:facebook\\.com|messenger\\.com)\\b)(?!.*\\bfacebook\\.com/plugins\\b).*") {
+     /* Facebook */
+     :root {
+          --C1: #191724;
+          --C2: #232136;
+          --C3: #393552;
+          --C4: #E0DEF4;
+          --B1: 1px solid var(--C4);
+          --BR1: 15px;
+          --BR2: 5px;
+          --ac: #ea9a97;
+          --lc: #b4637a;
+          --pi: #907aa9;
+          --st: #6e6a86;
+          --bg: #191724;
+          --bg2: #1f1d2e22;
+          --bg3: #1f1d2e99;
+          --bg4: #1f1d2ef5;
+          --sh1: #0000000d;
+          --sh2: #ffffff0d;
+          --sh3: rgba(0, 0, 0, .19);
+          --accent: var(--ac);
+          --always-white: var(--C4);
+          --always-black: #191724;
+          --always-dark-gradient: linear-gradient(rgba(25, 23, 36, 0), rgba(25, 23, 36, 0.6));
+          --always-dark-overlay: rgba(25, 23, 36, 0.4);
+          --always-light-overlay: rgba(224, 222, 244, 0.4);
+          --always-gray-40: #6e6a86;
+          --always-gray-75: #908caa;
+          --always-gray-95: var(--C4);
+          --attachment-footer-background: rgba(224, 222, 244, 0.1);
+          --background-deemphasized: rgba(224, 222, 244, 0.1);
+          --base-blue: var(--accent);
+          --base-cherry: #eb6f92;
+          --base-grape: #907aa9;
+          --base-lemon: #f6c177;
+          --base-lime: #c4a7e7;
+          --base-pink: #ea9a97;
+          --base-seafoam: #9ccfd8;
+          --base-teal: #31748f;
+          --base-tomato: #eb6f92;
+          --blue-link: var(--lc);
+          --card-background: var(--C2);
+          --card-background-flat: var(--C2);
+          --comment-background: #1f1d2e29;
+          --comment-footer-background: #b4637a;
+          --dataviz-primary-1: rgb(234, 154, 151);
+          --disabled-button-background: rgba(224, 222, 244, 0.2);
+          --disabled-button-text: rgba(224, 222, 244, 0.3);
+          --disabled-icon: rgba(224, 222, 244, 0.3);
+          --disabled-text: rgba(224, 222, 244, 0.3);
+          --divider: var(--sh3);
+          --event-date: #eb6f92;
+          --filter-accent: invert(80%);
+          --filter-always-white: invert(100%);
+          --filter-disabled-icon: invert(100%) opacity(30%);
+          --filter-placeholder-icon: invert(59%) sepia(11%) saturate(200%) saturate(135%) hue-rotate(176deg) brightness(96%) contrast(94%);
+          --filter-primary-icon: invert(1) sepia(6%) hue-rotate(185deg) opacity(0.5);
+          --filter-secondary-icon: invert(62%) sepia(98%) saturate(12%) hue-rotate(175deg) brightness(90%) contrast(96%);
+          --filter-warning-icon: invert(77%) sepia(29%) saturate(200%) saturate(200%) saturate(200%) saturate(200%) saturate(200%) saturate(128%) hue-rotate(359deg) brightness(102%) contrast(107%);
+          --filter-blue-link-icon: invert(73%) sepia(29%) saturate(200%) saturate(200%) saturate(200%) saturate(200%) saturate(200%) saturate(200%) saturate(103.25%) hue-rotate(189deg) brightness(101%) contrast(101%);
+          --filter-positive: invert(37%) sepia(61%) saturate(200%) saturate(200%) saturate(200%) saturate(200%) saturate(115%) hue-rotate(91deg) brightness(97%) contrast(105%);
+          --filter-negative: invert(25%) sepia(33%) saturate(200%) saturate(200%) saturate(200%) saturate(200%) saturate(200%) saturate(200%) saturate(110%) hue-rotate(345deg) brightness(132%) contrast(96%);
+          --glimmer-spinner-icon: var(--C4);
+          --hero-banner-background: #eb6f92;
+          --hosted-view-selected-state: rgba(144, 122, 169, 0.1);
+          --highlight-bg: var(--sh2);
+          --hover-overlay: rgba(224, 222, 244, 0.1);
+          --media-hover: rgba(51, 47, 71, 0.15);
+          --media-inner-border: rgba(224, 222, 244, 0.05);
+          --media-outer-border: #26233a;
+          --media-pressed: rgba(51, 47, 71, 0.35);
+          --messenger-card-background: var(--C2);
+          --messenger-reply-background: #26233a;
+          --overlay-alpha-80: var(--bg4);
+          --overlay-on-media: rgba(25, 23, 36, 0.6);
+          --nav-bar-background: var(--C2);
+          --nav-bar-background-gradient: linear-gradient(to top, #1f1d2e, rgba(31, 29, 46, .9), rgba(31, 29, 46, .7), rgba(31, 29, 46, .4), rgba(31, 29, 46, 0));
+          --nav-bar-background-gradient-wash: linear-gradient(to top, #26233a, rgba(38, 35, 58, .9), rgba(38, 35, 58, .7), rgba(38, 35, 58, .4), rgba(38, 35, 58, 0));
+          --negative: var(--ac);
+          --negative-background: #ea9a9733;
+          --new-notification-background: var(--C4);
+          --non-media-pressed: rgba(51, 47, 71, 0.15);
+          --non-media-pressed-on-dark: rgba(224, 222, 244, 0.3);
+          --notification-badge: var(--ac);
+          --placeholder-icon: #6e6a86;
+          --placeholder-text: #6e6a86;
+          --placeholder-text-on-media: rgba(224, 222, 244, 0.5);
+          --popover-background: var(--bg3);
+          --positive: #31748f;
+          --positive-background: #223239;
+          --press-overlay: rgba(224, 222, 244, 0.1);
+          --primary-button-background: var(--accent);
+          --primary-button-pressed: var(--pi);
+          --primary-button-text: #e0def4;
+          --primary-deemphasized-button-background: var(--accent);
+          --primary-deemphasized-button-pressed: rgba(180, 99, 122, 0.2);
+          --primary-deemphasized-button-pressed-overlay: rgba(180, 99, 122, 0.15);
+          --primary-deemphasized-button-text: var(--primary-button-text);
+          --primary-icon: var(--pi);
+          --primary-text: var(--C4);
+          --primary-text-on-media: var(--C4);
+          --primary-web-focus-indicator: #b4637a;
+          --progress-ring-neutral-background: rgba(224, 222, 244, 0.2);
+          --progress-ring-neutral-foreground: var(--C4);
+          --progress-ring-on-media-background: rgba(224, 222, 244, 0.2);
+          --progress-ring-on-media-foreground: var(--C4);
+          --progress-ring-blue-background: rgba(180, 99, 122, 0.2);
+          --progress-ring-blue-foreground: #b4637a;
+          --progress-ring-disabled-background: rgba(110, 106, 134, 0.2);
+          --progress-ring-disabled-foreground: #6e6a86;
+          --rating-star-active: #f6c177;
+          --scroll-thumb: rgba(224, 222, 244, 0.3);
+          --scroll-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 -1px rgba(224, 222, 244, 0.05) inset;
+          --secondary-button-background: #0000000d;
+          --secondary-button-background-floating: var(--C2);
+          --secondary-button-background-on-dark: rgba(224, 222, 244, 0.4);
+          --secondary-button-pressed: rgba(0, 0, 0, 0.05);
+          --secondary-button-stroke: transparent;
+          --secondary-button-text: #e0def4;
+          --secondary-icon: var(--pi);
+          --secondary-text: var(--st);
+          --secondary-text-on-media: rgba(224, 222, 244, 0.9);
+          --section-header-text: #908caa;
+          --shadow-1: #0006;
+          --shadow-2: rgba(0, 0, 0, .24);
+          --shadow-5: #00000080;
+          --shadow-8: rgba(0, 0, 0, .4);
+          --shadow-inset: rgba(224, 222, 244, 0.05);
+          --surface-background: rgba(0, 0, 0, .23);
+          --text-highlight: rgba(180, 99, 122, 0.45);
+          --toggle-active-background: #b4637a;
+          --toggle-active-icon: var(--C4);
+          --toggle-active-text: var(--C4);
+          --toggle-button-active-background: #e0def41a;
+          --wash: var(--C2);
+          --web-wash: var(--bg4);
+          --warning: #f6c177;
+          --fb-logo-color: #907aa9;
+     }
+     .__fb-dark-mode {
+          --card-background: var(--C2) !important;
+     }
+     .html-div.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x78zum5.xdt5ytf.xvv7f4i.x1cvmir6.xs7fzxq.x11c7tjg.x2bj2ny {
+          background-color: var(--C2) !important;
+     }
+}
