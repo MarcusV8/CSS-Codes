@@ -1,0 +1,197 @@
+ /* ==UserStyle==
+@name           Wikiepdia RP
+@namespace      https://github.com/MarcusV8/CSS-Codes
+@version        1.0.0
+@description    Wikipedia Rose pine theme.
+@author         MarcusV8
+==/UserStyle== */
+     @-moz-document domain("wikipedia.org") {
+               /* Wikipedia */
+        :root {
+               --C1: #191724;
+               --C2: #232136;
+               --C3: #393552;
+               --C4: #E0DEF4;
+               --B1: 1px solid var(--C4);
+               --BR1: 15px;
+               --BR2: 5px;
+          }
+          * {
+               color: var(--C4) !important;
+          }
+          body {
+               --background-color-base: var(--C2);
+               --background-color-interactive-subtle: var(--C3);
+               --background-color-neutral-subtle: var(--C2);
+               --C-emphasized: var(--C4);
+          }
+          input,
+          textarea,
+          select {
+               background-color: var(--C1) !important;
+               border: var(--B1) !important;
+               border-radius: 5px !important;
+          }
+          /* Declutter Page */
+          .vector-user-links-main,
+          .vector-menu-tabs,
+          .vector-page-toolbar-container .mw-portlet-views:not(.emptyPortlet),
+          #vector-user-links-dropdown,
+          /*Superior Buttons */
+          .mw-references-columns,
+          .mw-heading.mw-heading2>#References,
+          .mw-editsection/* References */
+          {
+               display: none;
+          }
+          /* Article Page */
+          .vector-dropdown .vector-dropdown-content {
+               background-color: var(--C3) !important;
+               border-radius: var(--BR1);
+               border: var(--B1);
+          }
+          .navbox:not(.notheme) {
+               background-color: var(--C1) !important;
+          }
+          .infobox,
+          .catlinks,
+          .hatnote.navigation-not-searchable,
+          .navbox,
+          .infobox-title.summary,
+          .mw-parser-output .portalright,
+          .navbox-title {
+               border-radius: var(--BR1);
+               border: var(--B1);
+          }
+          .mw-parser-output div.hatnote {
+               width: fit-content;
+               padding-right: 1.6em;
+          }
+          .tlheader.mbox-text {
+               border-radius: 5px 5px 0 0;
+          }
+          figure[typeof~="mw:File/Thumb"]>figcaption {
+               border-radius: 0 0 5px 5px;
+          }
+          #collapsibleTable0,
+          #collapsibleTable1,
+          #catlinks,
+          table[class*="nowraplinks hlist navbox-inner"],
+          ul[class*="noprint navigation-box"] {
+               background-color: var(--C3) !important;
+               border-radius: var(--BR1);
+          }
+          .navbox {
+               padding: 0px !important;
+          }
+          .cdx-button.mw-mmv-button.mw-mmv-button {
+               background-color: var(--C1) !important;
+               border-radius: 25px;
+          }
+          /* Table */
+          .table-yes2,
+          .table-no2,
+          .sidebar-content,
+          .sidebar-navbar,
+          .table-na,
+          tr[style*="background-color: #fff"] {
+               background-color: var(--C3) !important;
+               border: var(--B1);
+          }
+          th.headerSort,
+          th[class*="tlheader"],
+          .wikitable>*>tr>th,
+          .vevent.module-episode-list-row{
+               background-color: var(--C1) !important;
+               border: var(--B1);
+          }
+          tr[style*="background-color: #f7f7f7"] {
+               background-color: var(--C2) !important;
+               border: var(--B1);
+          }
+          tr>th[style*="background:#d1dbdf"], .description {
+               background-color: var(--C3) !important;
+          }
+          div[style*="border:1px solid silver"],
+          table[style*="font-size:88%"],
+          .table-pale,
+          .caption-purple {
+               background-color: var(--C3) !important;
+              border-radius: var(--BR1)
+          }
+          tr[style*="background:#ddd"],
+          .largestCities-cell-background {
+               background-color: var(--C1) !important;
+          }
+          div[style*="background-color: #eee"],
+          td[style*="background-color: #eee"] {
+               background-color: var(--C1) !important;
+               border: var(--B1);
+          }
+          span[style*="background-color:white"], .infobox-full-data:not(.notheme) > div:not(.notheme)[style], .module-episode-list-row small[style] {
+               background: none !important;
+          }
+          /* Talk */
+          .mw-parser-output .wpbs .wpb .wpb-main,
+          .wpbs .wpb-header,
+          .mw-parser-output .tmbox {
+               background-color: var(--C3) !important;
+               border-radius: var(--BR1)
+          }
+          /* Main Page */
+          .mw-parser-output .contentsPage--topic .contentsPage__intro,
+          .contentsPage__notes {
+               background-color: var(--C2) !important;
+               border-radius: var(--BR1);
+          }
+          .mw-parser-output #mp-topbanner,
+          .mw-parser-output #mp-left,
+          .mw-parser-output #mp-right {
+               background-color: var(--C3) !important;
+               border-radius: var(--BR1);
+          }
+          .mw-parser-output .mp-h2,
+          body.skin-timeless .mw-parser-output .mp-h2 {
+               background-color: var(--C1) !important;
+               border-radius: var(--BR1);
+          }
+          /* View Source */
+          #mw-blocked-text {
+               background-color: var(--C3) !important;
+               border-radius: var(--BR1);
+          }
+          div[style*="background-color:#F9F9F9"] {
+               background-color: var(--C3) !important;
+          }
+          .mw-parser-output .fmbox {
+               border-radius: var(--BR1);
+               border: var(--B1) !important;
+          }
+          #footer-icons a {
+               background-color: var(--C3);
+          }
+          .noprint>tbody>tr {
+               background: none !important;
+          }
+          /* Contents */
+          .mw-parser-output .contentsPage--type .contentsPage__heading,
+          .mw-parser-output .contentsPage--type .contentsPage__intro,
+          .mw-parser-output .contentsPage--type .contentsPage__title,
+          .mw-parser-output .contentsPage--type,
+          #contents-footer,
+          div[style*="margin:0.2em"],
+          div[style*="margin:15px 0"],
+          .wp-ga-summary-description,
+          .wp-ga-summary-nav,
+          .wp-ga-summary-recent,
+          .wp-ga-summary-topics,
+          .mw-heading.mw-heading2.ext-discussiontools-init-section,
+          .mw-parser-output .contentsPage--topic .contentsPage__heading {
+               background-color: var(--C3) !important;
+               border-radius: var(--BR1);
+          }
+          div[style*="margin:-0.1em -0.1em 0.1em"] {
+               background-color: var(--C1) !important;
+               border-radius: var(--BR1);
+          }
+     }
