@@ -1,9 +1,9 @@
 /* ==UserStyle==
 @name           Blogspot Rose Pine
-@namespace      github.com/openstyles/stylus
+@namespace      https://github.com/MarcusV8/CSS-Codes
 @version        1.0.0
-@description    A new userstyle
-@author         Me
+@description    Attempted Universal rose pine theme for Blogspot domain.
+@author         MarcusV8
 ==/UserStyle== */
 @-moz-document domain("blogspot.com") {
                /* Blogspot */
@@ -48,21 +48,21 @@
     
         /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/  Background  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
 
-     h2, a.readmore, .byline.post-labels a, div.jump-link1, .snippet-thumbnail .post-header, h3.title {
+     h2, a.readmore, .blog-pager a, .blog-pager span, .byline.post-labels a, div.jump-link1, .site-bg, .snippet-thumbnail .post-header, h3.title  {
           background: var(--C1) !important;
      }
 
-     #blog-container, #contentwrap, #main-wrap1, #sidebarbottom-wrap2, #sidebartop-wrap, #sidebartop-wrap2, #slider, #wrapper, .bg-photo-overlay, .inner, .main-and-sidebar, .main-content, .main-inner .column-left-inner, .main-inner .column-right-inner, .main-nav-wrapper, .tl-footer-branding {
+     #blog-container, #contentwrap, #main-wrap1, #sidebarbottom-wrap2, #sidebartop-wrap, #sidebartop-wrap2, #slider, #wrapper, .bg-photo-overlay, .inner, .main-and-sidebar, .main-content, .main-inner .column-left-inner, .main-inner .column-right-inner, .main-nav-wrapper, .tl-footer-branding, .viewitem-panel .viewitem-inner {
           background: var(--C2);
      }
           
-     #bottombar, #footer, #footer-wrapper, #header, #header .header-bar, #header .header-drawer, #header-blog, #header-navigation, #header-wrap, #NavMenu, #nav, #navcontainer, #navbarbwrap, #page_body .FeaturedPost, #related-wrap, #search, #sidebar_top, #slider .post-info-wrapper, #topnav, .about-author, .Blog .blog-posts .post-outer-container, .box, .centered-top-container, .centered-top-container.sticky, .footer-outer, .item .post, .lightbox-panel .lightbox-inner, .menu-secondary-container, .nav-wrapper, .navbarbwrap, .overview-panel .article, .overview-panel .overview-inner, .post-item-inner, .sidebar .widget, .sidebar-container, .sidebar-container .navigation, .sidebar-container .sidebar_bottom, .site-info-container, .sticky .centered-top, .title-wrap {
-          background: var(--C3) !important;
-     }
+     #bottombar, #comments, #content, #feature, #footer, #footer-wrapper, #header, #header .header-bar, .header-drawer, #header-blog, #header-navigation, #header-wrap, #main-feat-wrapper .post, #mastheadnbt, #NavMenu, #nav, #navcontainer, #navbarbwrap, #page_body .FeaturedPost, #relhead, #related-wrap, #search, #sidebar_top, #slider .post-info-wrapper, #testimonial-wrap, #topnav, .about-author, .Blog .blog-posts .post-outer-container, .box, .centered-top-container, .centered-top-container.sticky, .entry-content-wrap, .footer-outer, .grid-widget .custom-widget li, .header-menu .container .block-sign, .item .post, .index-post, .index-post-wrap, .heroPost .big-post-title, .heroPost .big-post-text, .header-iconsnbt, .jt-border-light, .lightbox-panel .lightbox-inner, .main-slider .post-info-wrap, .menu-secondary-container, .nav-wrapper, .navbarbwrap, .overview-panel .article, .overview-panel .overview-inner, .post-item-inner, .sidebar .widget, .sidebar-container, .sidebar-container .navigation, .sidebar-container .sidebar_bottom, .site-info-container, .sticky .centered-top, .title-wrap, ul.slimmenu, ul.slimmenu li, .viewitem-panel .viewitem-content, .viewitem-panel .article {
+          background: var(--C3) !important; 
+     } 
           
-     #blog-pager, #blog-wrapper, #body-wrapper, #breadcrumb, #comments, #container, #content-wrapper, #header-wrapper, #lower, #l_sidebar ul li, #main, #main-top, #main-wrapper, #outer-wrapper, #r_sidebar ul li, #sidebar1, #sidebar2, #ty_footer, #wrap, #wrap2, #wrapper-bg, .bajada, .blog-pager-newer-link, .blog-pager-older-link, .content-inner, .content-outer, .content-outer .content-cap-top, .date-outer, .entry-header, .fauxcolumn-inner, .fauxcolumn-outer .fauxborder-left, .fauxcolumn-outer .fauxborder-right, .feed-view .post-wrapper .post, .footer-fauxborder-left, .gsc-control-cse, .gsc-input-box, .header-outer, .home-link, .Image img, .main-inner .column-center-outer, .main-outer, .post-footer, .post-outer, .post-wrapper, .row.row-small, .separator, .site-headerbwrap, .stylebox .widget-content, .tabs-inner .widget ul, .tl-topfeatured, .widget.Blog .post.no-featured-image, .xRandomPost, .yt-simple-endpoint.style-scope.yt-formatted-string, .bot-bar-menu, ul.post-nav,
+     #blog-pager, #blog-wrapper, #body-wrapper, #breadcrumb, #container, #content-wrapper, #header-wrapper, #lower, #l_sidebar ul li, #main, #main-top, #main-wrapper, #outer-wrapper, #post-wrapper, #r_sidebar ul li, #sidebar, #sidebar1, #sidebar2, #sidebar-wrapper, #ty_footer, #wrap, #wrap2, #wrapper-bg, .author-profile, .bajada, .blog-pager-newer-link, .blog-pager-older-link, .comments .comment-thread.inline-thread, .comments .comment-block, .content-inner, .content-outer, .content-outer .content-cap-top, .date-outer, div#tab1, div#tab2, div#tab3, .entry-header, .entry-content a, .entry-content a:link, .entry-content a:visited, .fauxcolumn-inner, .fauxcolumn-outer .fauxborder-left, .fauxcolumn-outer .fauxborder-right, .feed-view .post-wrapper .post, .feed.widget.blogging .widget-content, .feed.widget.complex .item, .feed.widget.list .item, .feed.widget.left .item, .feed.widget.right .item, .footer-fauxborder-left, .footer-inner, .gsc-control-cse, .gsc-input-box, .header-outer, .home-link, .Image img, .main-inner .column-center-outer, .main-outer, .post, .post-footer, .post-outer, .post-title.entry-title , .post-wrapper, .post-body, .post-body .tr-caption-container, .row.row-small, .separator, .site-headerbwrap, .stylebox .widget-content, .tabs-inner .widget ul, .tl-topfeatured, .widget.Blog .post.no-featured-image, .wrapper, .xRandomPost, .yt-simple-endpoint.style-scope.yt-formatted-string, .bot-bar-menu, ul.post-nav,
 
-     div[style*="background: rgb(255, 255, 255)"], div[style*="background-color: #fffafa"], div[style*="background-color: white"], p[style*="background: white"], p[style*="background-color: #fffafa"], p[style*="background-color: white"], table[style*="background-colorw: white"], td[style*="background: repeat rgb(211, 223, 238)"], tr[bgcolor*="#E6E8FA"] {
+     div[style*="background: rgb(255, 255, 255)"], div[style*="background-color: #fffafa"], div[style*="background-color: white"], div[style*="background: white"], p[style*="background: white"], p[style*="background-color: #fffafa"], p[style*="background-color: white"], table[style*="background-colorw: white"], td[style*="background: repeat rgb(211, 223, 238)"], tr[bgcolor*="#E6E8FA"] {
           background: none !important;
       }
           
@@ -75,6 +75,10 @@
           padding: 5px;
           overflow: hidden; 
           text-align: center;
+     }
+     div[data-version="2"] {
+          background-color: var(--C3) !important;
+
      }
      .date-header, h2[class*="title"], .sidebar .widget h2 {
           background: var(--C1) !important;
