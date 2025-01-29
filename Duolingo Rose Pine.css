@@ -1,0 +1,110 @@
+     /* ==UserStyle==
+@name           Duolingo Rose Pine
+@namespace      https://github.com/MarcusV8/CSS-Codes
+@version        1.0.0
+@description    Rose Pine theme for Duolingo.
+@author         MarcusV8
+==/UserStyle== */
+
+@-moz-document domain("duolingo.com") {
+               /* Duolingo */
+          :root {
+               --C1: #191724;
+               --C2: #232136;
+               --C3: #393552;
+               --C4: #E0DEF4;
+               --B1: 1px solid var(--C4);
+               --BR1: 15px;
+               --BR2: 5px;
+               --C-macaw: var(--C4) !important;
+               --C-eel: var(--C4) !important;
+               --C-snow-always-light: var(--C4) !important;
+               --C-black-text: var(--C4) !important;
+               --C-wolf: var(--C4) !important;
+               --C-hare: var(--C4) !important;
+          }
+          body,
+          .LAMqw,
+          ._3P5E_,
+          ._3FB5S._3yMvO,
+          ._1i82L._1rcV8._1VYyp._1ursp._7jW2t._2uAd1._1BUv5._3b8r8,
+          ._292Rf,
+          ._3rB4d,
+          ._3QKn2,
+          ._2i9lj {
+               background-color: var(--C2) !important;
+          }
+          ._1T_BQ,
+          ._36bu_,
+          .PsNCe,
+          ._3LueZ,
+          ._1h70T,
+          ._2G9SS,
+          .m_b-V,
+          ._2uSOC,
+          ._15B39,
+          ._2xnMb,
+          ._1M4wz,
+          ._5KPRI,
+          .uiOhM,
+          ._3kddW {
+               background-color: var(--C3)!important;
+          }
+          ._1AZJt,
+          ._9lHjd,
+          ._3WYpp,
+          .TOHdU,
+          ._27IMa,
+          ._9ozg3 {
+               color: var(--C4) !important;
+          }
+          ._1IwKR {
+               color: var(--C3)!important;
+          }
+          ._3P5E_ {
+               border-right: 2px solid var(--C4);
+          }
+          ._1333i {
+               --path-level-color: var(--C3)!important;
+          }
+          ._1cX5c {
+               --path-unit-character-color: var(--C4) !important;
+          }
+          ._1yhVg {
+               --__internal__color: var(--C4) !important;
+          }
+          ._3b8r8 {
+               --web-ui_button-background-color: var(--C2) !important;
+               --web-ui_button-border-color: var(--C2) !important;
+          }
+          ._3U5_i {
+               --web-ui_button-background-color-disabled: var(--C3);
+          }
+          ._2V6ug {
+               --__internal__background-color: var(--C3)!important;
+          }
+          ._1M4wz {
+               --web-ui_button-color: var(--C3)!important;
+          }
+          ._2oGJR {
+               --web-ui_button-background-color: var(--C3)!important;
+               --web-ui_button-border-color: var(--C3)!important;
+          }
+          ._1VYyp {
+               --__internal__background-color: var(--C3)!important;
+          }
+          ._1VYyp {
+               border: solid 1px var(--C2) !important;
+          }
+          .PsNCe._1yHHi {
+               border-radius: 0 0 5px 5px;
+          }
+          ._3LueZ {
+               border-radius: 5px 5px 0 0;
+          }
+          ._3mfHU,
+          ._3Mmv9,
+          ._16rRh._2cnFr._1T_BQ {
+               display: none;
+          }
+     }
