@@ -1,0 +1,240 @@
+/* ==UserStyle==
+@name                    Rosepine Reddit
+@namespace               https://github.com/MarcusV8/CSS-Codes
+@version                 1
+@description             Rose Pine Reddit
+@author                  MarcusV8
+@preprocessor            stylus
+==/UserStyle== */
+
+@-moz-document domain("reddit.com") {
+     /* Reddit */
+     * {
+          --C1: #191724;
+          --C2: #232136;
+          --C3: #393552;
+          --C4: #E0DEF4;
+          --B1: 1px solid var(--C4);
+          --BR1: 15px;
+          --BR2: 5px;
+          --bg-light: #2a273f;
+          --bg-dark: #1f1d2e;
+          --fg-dark: #908caa;
+          --red: #eb6f92;
+          --orange: #f6c177;
+          --yellow: #f6c177;
+          --green: #9ccfd8;
+          --blue: #9ccfd8;
+          --purple: #c4a7e7;
+          --pink: #eb6f92;
+          --accent-1: var(--purple);
+          --accent-2: var(--pink);
+          --color-primary-onBackground: var(--red) !important;
+          --color-primary-onBackground-selected: var(--red);
+          --color-neutral-border: var(--bg-dark) !important;
+          --color-neutral-content: var(--accent-1) !important;
+          --color-neutral-content-disabled: var(--red) !important;
+          --color-neutral-content-weak: var(--C4) !important;
+          --color-neutral-content-strong: var(--C4) !important;
+          --color-neutral-background: var(--C2) !important;
+          --color-neutral-background-selected: var(--accent-1) !important;
+          --color-neutral-background-weak: var(--bg-dark) !important;
+          --color-neutral-background-medium: var(--red) !important;
+          --color-neutral-background-strong: var(--C2) !important;
+          --color-neutral-background-hover: var(--C1) !important;
+          --color-neutral-border-weak: transparent !important;
+          --color-neutral-border-strong: var(--accent-1) !important;
+          --color-tone-1: var(--accent-1) !important;
+          --color-tone-2: var(--accent-2) !important;
+          --color-tone-3: var(--C4) !important;
+          --color-tone-4: var(--bg-light) !important;
+          --color-tone-5: transparent !important;
+          --color-tone-6: var(--C3) !important;
+          --color-tone-7: var(--C2) !important;
+          --color-primary: var(--blue) !important;
+          --color-primary-hover: var(--accent-2) !important;
+          --color-primary-background: var(--bg-light) !important;
+          --color-primary-background-hover: var(--blue) !important;
+          --color-primary-background-selected: var(--blue) !important;
+          --color-secondary: var(--C4) !important;
+          --color-secondary-hover: var(--fg-dark);
+          --color-secondary-weak: var(--accent-1) !important;
+          --color-secondary-background: var(--C3) !important;
+          --color-secondary-background-hover: var(--bg-light) !important;
+          --color-secondary-background-selected: var(--bg-light) !important;
+          --shreddit-content-background: transparent !important;
+          --button-border-color: var(--yellow);
+          --button-border-color-activated: transparent !important;
+          --button-color-background-activated: var(--bg-light) !important;
+          --button-color-text-activated: var(--accent-1) !important;
+          --button-color-overlay: var(--yellow) !important;
+          --button-border-color-hover: transparent !important;
+          --button-color-background-hover: var(--bg-light) !important;
+          --button-color-text: transparent !important;
+          --color-button-secondary-text: var(--C4) !important;
+          --color-button-secondary-text-activated: var(--C4) !important;
+          --color-button-secondary-text-disabled: var(--C4) !important;
+          --color-button-secondary-border: transparent !important;
+          --color-button-secondary-background: var(--C1) !important;
+          --color-button-secondary-background-focus: var(--yellow) !important;
+          --color-button-secondary-background-hover: var(--C3) !important;
+          --color-button-secondary-background-activated: var(--yellow) !important;
+          --color-button-secondary-background-disabled: var(--yellow) !important;
+          --color-action-upvote: var(--green);
+          --color-action-downvote: var(--red);
+          --color-media-background: var(--bg-light);
+          --color-media-onbackground: var(--accent-1);
+          --color-media-onbackground-disabled: var(--C3);
+          --newCommunityTheme-bodyText: var(--C4);
+          --newCommunityTheme-metaText: var(--orange);
+          --newCommunityTheme-button: var(--C4);
+          --newCommunityTheme-body: var(--C2);
+          --newRedditTheme-actionIcon: var(--C4);
+          --newCommunityTheme-line: transparent;
+          --newRedditTheme-line: transparent;
+          --newRedditTheme-linkText: var(--accent-1);
+          --newCommunityTheme-navIconFaded10: var(--orange);
+          --newCommunityTheme-active: var(--orange);
+          --newCommunityTheme-field: var(--C1);
+          --newRedditTheme-button: var(--accent-1);
+          --newCommunityTheme-actionIcon: var(--accent-1);
+          --newCommunityTheme-bodyTextAlpha20: transparent;
+          --newRedditTheme-post: var(--C2);
+          --newRedditTheme-body: var(--C2);
+          --newRedditTheme-field: var(--bg-dark);
+          --newCommunityTheme-navIcon: var(--C4);
+          --newRedditTheme-actionIconAlpha50: var(--orange);
+          --newRedditTheme-buttonAlpha05: var(--bg-light);
+          --newRedditTheme-bodyText: var(--C4);
+          --newCommunityTheme-buttonAlpha50: var(--C3);
+          --pseudo-before-background: var(--bg-dark) !important;
+          --newRedditTheme-metaText: var(--C4);
+          --newRedditTheme-navIconFaded10: var(--C2);
+          --newCommunityTheme-postLine: transparent;
+          --newRedditTheme-widgetColors-sidebarWidgetBackgroundColor: var(--C2);
+          --newCommunityTheme-widgetColors-sidebarWidgetHeaderColor: var(--orange);
+          --newRedditTheme-widgetColors-sidebarWidgetBorderColor: transparent;
+          --post-icon-color: var(--orange);
+          --newCommunityTheme-postIcon: var(--accent-1);
+          --posttitletextcolor: var(--C4);
+     }
+     * {
+          color: var(--C4) !important;
+     }
+     .button.icon {
+          color: var(--C4);
+     }
+     .py-2xs {
+          background-color: var(--C3) !important;
+     }
+     /* Declutter Page */
+     
+     /* Navbar */
+     nav [data-part="advertise"] {
+          display: none !important;
+     }
+     nav [data-part="chat"] {
+          display: none !important;
+     }
+     nav [data-part="create"] {
+          display: none !important;
+     }
+     button[class*="aria-label = Premiar"] {
+          display: none !important;
+     }
+     
+     /* Dropdown Menu */
+     faceplate-dropdown-menu [noun="edit_avatar"] {
+          display: none;
+     }
+     faceplate-dropdown-menu [noun="user_drawer"] {
+          display: none;
+     }
+     faceplate-dropdown-menu [noun="contributor_program"] {
+          display: none;
+     }
+     faceplate-dropdown-menu [noun="advertise"] {
+          display: none;
+     }
+     #user-drawer-content>ul:has([noun="advertise"]:only-child),
+     #user-drawer-content>ul:has([noun="advertise"]:only-child)+hr {
+          display: none;
+     }
+     faceplate-dropdown-menu [noun="premium_menu"] {
+          display: none;
+     }
+     #user-drawer-content>ul:has([noun="premium_menu"]),
+     #user-drawer-content>ul:has([noun="premium_menu"])+hr {
+          display: none;
+     }
+     /* Remove Right Sidebar */
+     .main-container {
+          gap: 0 !important;
+     }
+     #right-sidebar-container {
+          display: none !important;
+     }
+     :root {
+          --width-right-sidebar: 0;
+     }
+     /* Remove Unnecessary Sections*/
+     faceplate-expandable-section-helper:has(#multireddits_section),
+     faceplate-expandable-section-helper:has(#multireddits_section)+hr {
+          display: none !important;
+     }
+     reddit-sidebar-nav>nav> :is(nav, div:last-child) {
+          display: none !important;
+     }
+     /********************************************************************/
+     /* Left sidebar */
+     #navbar-menu-button {
+          display: inline-flex !important;
+          color: var(--C4);
+     }
+     #left-nav-drawer::part(overlay) {
+          display: none !important;
+     }
+     #left-sidebar-container {
+          display: none !important;
+     }
+     shreddit-app:not(:has(> #left-nav-drawer)) .grid-container {
+          grid-template-columns: 0 1fr !important;
+     }
+     .rpl-scroll-lock {
+          overflow: auto !important;
+     }
+     #left-sidebar-container {
+          display: block !important;
+     }
+     shreddit-app:not(:has(> #left-nav-drawer)) .grid-container {
+          grid-template-columns: 272px 1fr !important;
+     }
+     shreddit-app:has(> #left-nav-drawer) {
+          #left-sidebar-container,
+          #left-nav-drawer {
+               display: none !important;
+          }
+          .grid-container {
+               grid-template-columns: 0 1fr !important;
+          }
+     }
+     /* Feed Manipulation 
+     @media (min-width: 1200px) {
+          .flex-grid--main-container-card.right-sidebar-m,
+          .flex-grid--main-container-card.right-sidebar-s,
+          .flex-grid--main-container-card.right-sidebar-xs {
+               max-width: 550px !important;
+          }
+     }
+     .main-container {
+          justify-content: left !important;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 16px;
+     }
+     .py-2xs {
+          flex: 1 1 48%;
+          max-width: calc(50% - 8px);
+          margin-bottom: 16px;
+     } */
+}
