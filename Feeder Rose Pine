@@ -1,4 +1,12 @@
-    @-moz-document domain("feeder.co") {
+     /* ==UserStyle==
+@name           Feeder RP
+@namespace      https://github.com/MarcusV8/CSS-Codes
+@version        1
+@description    Feeder Rose Pine theme.
+@author         MarcusV8
+==/UserStyle== */
+
+@-moz-document domain("feeder.co") {
           /* Feeder */
          :root {
               --C1: #191724;
@@ -12,6 +20,13 @@
          * {
               color: var(--C4) !important;
          }
+         input,
+         textarea,
+         select {
+              background-color: var(--C1) !important;
+              border: var(--B1) !important;
+              border-radius: var(--BR2);
+         }
          /*      First Page         */
          .sidebar-navigation--inner,
          .__c4b1f,
@@ -20,7 +35,7 @@
          .bar,
          .f--button.secondary,
          .f--button.large,
-         .__15e08.odd {
+         .__15e08.odd, .container {
               background-color: var(--C2) !important;
          }
          .sidebar-nav-tab.active,
@@ -51,7 +66,6 @@
               fill: var(--C4) !important;
          }
          /* Other Sections  */
-         .container,
          .f--button.destroy {
               background-color: var(--C1) !important;
          }
@@ -101,5 +115,8 @@
          .__5581a,
          .header {
               background-color: var(--C2) !important;
+         }
+         .__526cf.nag-message {
+               display:none;
          }
     }
