@@ -1,8 +1,9 @@
 /* ==UserStyle==
 @name         Stylus M3
-@version      20230305.22.31
-@namespace    ?
+@version      0
+@namespace    https://github.com/MarcusV8/CSS-Codes
 ==/UserStyle== */
+
 @-moz-document url-prefix("moz-extension://852f70b1-1c6d-4788-a4b2-3c4209e2a6bd") {
      /* Stylus M3*/
      :root {
