@@ -1,0 +1,114 @@
+@-moz-document domain("blogspot.com") {
+               /* Blogspot */                                                                         
+          :root {
+               --C1: #191724;
+               --C2: #232136;
+               --C3: #393552;
+               --C4: #E0DEF4;
+               --B1: 1px solid var(--C4);
+               --BR1: 15px;
+               --BR2: 5px;
+          }
+             * {
+               color: var(--C4) !important;
+          }
+          input,
+          textarea,
+          select {
+               background-color: var(--C1) !important;
+               border: var(--B1) !important;
+               border-radius: var(--BR2);
+          }
+          html,
+          body {
+               background: var(--C2) !important;
+          }
+           body > header:first-of-type, body > div > [id*="header"] {
+               background: var(--C3) !important;
+           }
+          img:not([src*=".svg"]) {
+               border-radius: var(--BR1) !important;
+               border: var(--B1);
+          }
+          .post-body img {
+               max-width: 555px;
+          }
+          
+        /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/  Background  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+          
+          [id*="blog-pager"], .date-header, .jump-link a, span > a, .readmore a, .entry-header, a.readmore, .sidebar .list-label-widget-content a, #sidebar {
+                background: var(--C1) !important;
+          }
+          [id*="wrapper"], div[class*="main"]:not(.main_header_elements, #main-menu), [class*="sidebar"], .navigation, .viewitem-panel .article  {
+                background: var(--C2) !important;
+          }
+          [id*="search"], [id*="header"], #topnav, [class*="comment-thread"], div[class*="footer-f"], #footer-container, .sticky *, .tabs-widget li a, div[class*="menu"], [id*="masthead"], .centered-top-container, #navcontainer, #content, #feature, #header .header-bar, .overview-panel .article, div[class*="viewitem"], .block-sign, .custom-widget li, .header-drawer.sticky.open, #sidebar .item.selected {
+               background: var(--C3) !important;
+          }
+          span, [class*="post"]:not([class*="post-thumb"]), [class*="inner"], .bg-photo-overlay, [class*="outer"], [style*="background"], [class*="version"], .tabs-inner *, #main-nav, [id="wrap"], #main-top, class[bgcolor=""], .colchete, .post blockquote, #contentwrap {
+               background: transparent !important;
+          }
+
+       /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/  Widgets  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+
+           div[data-version="1"] {
+               background: var(--C3) !important;
+               border-radius: var(--BR1) !important;
+               border: var(--B1) !important;
+               padding: 5px !important;
+               overflow: hidden; 
+               text-align: center;
+          }
+          div[data-version="2"] {
+               background-color: var(--C3) !important;
+               border-radius: var(--BR1) !important;
+               border: var(--B1) !important;
+          }
+               h2 {
+               background: var(--C1) !important;
+               border-radius: var(--BR2) !important;
+               width: fit-content;
+               text-align: center;
+               margin: auto !important;
+          }
+
+          #Header1 {
+                margin-bottom: 15px;
+          }
+          .PageList li a {
+               background: var(--C1) !important;
+               margin: auto !important;
+          }
+          
+      /* ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■/  Others  /■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■*/
+          
+          #Navbar1, .main-outer, .tabs-inner * {
+               border: none !important;
+          } 
+          .tabs-inner *,
+          .item-view .bg-photo-container + .centered .centered-bottom .post-wrapper {
+               margin: 0px !important;
+          }
+          #header-navigation {
+               height: auto;
+          }
+          .bg-photo, .snippet-fade,
+            .publicidade-ancorads {
+               display: none;
+          }
+     
+}
+@-moz-document domain("blogger.com") {
+          /* Blogger Plugin*/
+     html,
+     body,
+     :not([style*="background-color:"]) {
+          background-color: #393552 !important;
+     }
+     html,
+     body,
+     :not([style*="color:"]),
+     .sr-reader *:not([class*="sr-pivot"]) {
+          color: #E0DEF4 !important;
+     }
+}    
