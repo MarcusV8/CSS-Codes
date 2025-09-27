@@ -1,11 +1,4 @@
-      /* ==UserStyle==
-@name           Tudocelular Rose pine
-@namespace      https://github.com/MarcusV8/CSS-Codes
-@version        1
-@description    Tudo Celular Rose Pine
-@author         MarcusV8
-==/UserStyle== */
-@-moz-document domain("tudocelular.com") {
+ @-moz-document domain("tudocelular.com") {
          /* Tudo Celular*/
          :root {
               --C1: #191724;
@@ -86,7 +79,7 @@
          #loginbtn,
          #register,
          .btn_more,
-         .btn-more {
+         .btn-more, .larrow, .rarrow, .labelo {
               background: var(--C1) !important;
          }
          .gray_comments {
