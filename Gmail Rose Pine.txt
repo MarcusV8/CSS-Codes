@@ -1,0 +1,99 @@
+@-moz-document url-prefix("https://mail.google.com") {
+               /* Gmail */
+               :root {
+                    --C1: #191724;
+                    --C2: #232136;
+                    --C3: #393552;
+                    --C4: #E0DEF4;
+                    --B1: 1px solid var(--C4);
+                    --BR1: 15px;
+                    --BR2: 5px;
+               }
+               * {
+                  color: var(--C4) !important;  
+               }
+               input,
+               textarea,
+               select {
+                    background-color: var(--C1) !important;
+                    border: 1px solid var(--C4) !important;
+                    border-radius: 5px !important;
+          }
+               .la-i > div {
+                    animation: none !important;
+               }
+               #loading, #stb {
+                    background-color: var(--C2) !important;
+               }
+               .la-k .la-m,
+               .la-i > .la-m {
+                    background-color: var(--C2) !important;
+               }
+               .la-k .la-l, .la-k .la-r {
+                    border: 3px none bg !important;
+               }
+               .msg, .msgb {
+                    color: var(--C4) !important;
+               }
+               .submit_as_linkm, #loading a {
+                    color: var(--C4) !important;
+               }
+               .G-atb,
+               .G-tF,
+               .aqJ,
+               .iH,
+               .adF .aAU,
+               .agd .J-M-JJ input,
+               .agP,
+               .agb,
+               .afx,
+               .Tm .TC,
+               .zA,
+               .hx .h7 .Bk .G2 .adn,
+               .bkK>.nH,
+               .a98 .byY,
+               .h7.ie .gA>.gB>.ip,
+               .wR>.amn,
+               .IU,
+               .brC-ays,
+               .brC-aMv-auO .brC-dA-I.aT5-aOt-I-Jp.aT5-aOt-I-JO .aT5-aOt-I-JX-Jw,
+               .brC-aMv-auO .brC-dA-I.aT5-aOt-I-Jp.aT5-aOt-I-JW .aT5-aOt-I-JX-Jw {
+                    background-color: var(--C2) !important;
+               }
+               .aeN,
+               .rPlcIc,
+               .aeJ,
+               .aeN .z0>.L3,
+               .J-N,
+               .J-LC,
+               .J-JK,
+               .ZF-zT>.ZZ,
+               .J-M,
+               .afW,
+               .aaZ,
+               .aoI .Am.Al,
+               .aoT,
+               .aoP .Ar,
+               .bkK>.nH,
+               .hN,
+               .hO, .at, .au, .uW2Fw-bHo, .bzx, .bzx .bzq {
+                    background-color: var(--C3) !important;
+               }
+               .G-atb {
+                    margin: 0px;
+               }
+               .aUx {
+                    background-color: var(--C3) !important;
+               }
+               .nH {
+                    background-color: var(--C2);
+               }
+          }
+          @-moz-document domain("https://contacts.google.com/widget") {
+               /* Gmail Widget*/
+               html,
+               body,
+               :not([style*="color:"]) {
+                    background: none;
+               }
+          }
