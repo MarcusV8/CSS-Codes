@@ -1,0 +1,93 @@
+@-moz-document domain("news.google.com") {
+    :root {
+        --C1: #191724; --C2: #232136; --C3: #393552; --C4: #E0DEF4; --B1: 1px solid var(--C4); --BR1: 15px;--BR2: 5px;
+    }
+    
+    * {
+        color: var(--C4) !important;
+    }
+
+    .IKXQhd, .T4LgNb, .zQTmif {
+        background: var(--C2) !important;
+    }
+    #gb, [role="menu"], 
+    .Ly25Ed, .sQBzPb, .Z2kkN, .isdDAc, .yPI8Rb, .ryo59b, .i0Zvib, .QVEiob, .ndIcDe, .Ccj79, .nTN4Wc, .ME1Kbf, .lF2Cpe.dm7YTc .GZINTe .CGNRMc, .lF2Cpe.dm7YTc .KrPhCd .CGNRMc, .WeBXWd , .yINXKd, .HDbYSe, .dm7YTc .dSBEqc,
+    .lF2Cpe.dm7YTc .CGNRMc .lMgtcc, .VfPpkd-P5QLlc
+    {
+        background: var(--C3) !important;
+    }
+    .pGxpHc .VISqTe, .b42OPe, .RF3lAd, .jKHa4e, .NfZthc.xIBui, .MyQDIb, .qNlNJb.mImKeb, .dm7YTc:not(.FuHVqe) .FNOxbe:not(:disabled), .CGNRMc .To2ZZb, .uUmIDd, .BGKIec,.Y9bbfb .EE2L0d, body.dm7YTc .aqpp1c:not(:disabled), .z6jUnf, .VOBzC .VfPpkd-YAxtVc, .taS2Yb, .AjY5Oe, .RBHQF-ksKsZd, .UOVeFe.aOWjQ .bwOy4d.z6aWUe {
+        background: var(--C1) !important;
+    }
+    .LeRuNc, .dm7YTc .WCkv8e.NpgiG .dSBEqc, .qN9IM {
+        background: none !important;
+    }
+
+    /* Design
+    main.IKXQhd { 
+        display: flex !important; 
+        justify-content: center !important; 
+        align-items: flex-start !important; 
+        width: 100% !important; 
+        max-width: none !important; 
+        margin: 0 !important;
+        padding: 0 !important; 
+        gap: 0 !important; 
+    }
+
+    c-wiz.D9SJMe { 
+        display: grid !important; 
+        grid-template-columns: 47.5% 47.5% !important; 
+        grid-auto-flow: row dense !important; 
+        column-gap: 5% !important; 
+        width: 90% !important; 
+        margin: 0 !important; 
+        min-width: unset !important;
+        max-width: unset !important;
+        position: static !important; 
+        grid-template-rows: masonry !important; 
+    }
+
+    c-wiz.D9SJMe > c-wiz.PO9Zff.Ccj79.kUVvS, c-wiz.D9SJMe > c-wiz.qNlNJb.mImKeb, c-wiz.ME1Kbf, .qNlNJb.mImKeb {
+        width: auto; 
+        min-width: unset !important; 
+        max-width: none !important;
+        margin: 0 !important;
+    }
+
+    .IBr9hb { 
+        flex-shrink: 1 !important; 
+    }
+    .f9uzM { 
+        width: 100% !important;
+    }
+    .IBr9hb .gPFEn, .UOVeFe {
+        max-width: 90% !important;
+    }
+
+   #gb {
+          top: -150px; 
+          height: 115px;
+          transition: all 300ms ease-in-out !important;
+          z-index: 1000;
+          opacity: 1 !important; 
+    }
+   #gb::before {
+          content: '';
+          position: absolute;
+          top: 150px; 
+          left: 0;
+          width: 100%;
+          height: 70px;
+          background: transparent;
+          z-index: -1;
+    }
+
+    #gb:hover {
+      transform: translateY(150px) !important;
+    }
+
+    .AUWEld, .MAB0J, .VjFXz {
+        display: none;
+    }*/ 
+}
