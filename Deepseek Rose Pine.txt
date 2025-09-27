@@ -1,0 +1,34 @@
+@-moz-document domain("deepseek.com") {
+      /* Deepseek */
+       :root {
+          --C1: #191724;
+          --C2: #232136;
+          --C3: #393552;
+          --C4: #E0DEF4;
+          --B1: 1px solid var(--C4);
+          --BR1: 15px;
+          --BR2: 5px;
+     }
+     * {
+          color: var(--C4) !important;
+     }
+          /* Home */
+    ._2be88ba, ._660ca72, ._8f60047, ._871cbca, .ds-segmented-button.ds-segmented-button--selected, ._77cefa5{
+        background: var(--C2) !important;
+     }
+     
+     .b8812f16, ._83421f9, ._48cdfc1, .f0d4f23d , ._77cefa5 .dd442025, div[class*="dropdown"], .ds-modal-content, ._121d384, .fbb737a4, .ds-markdown code {
+        background: var(--C3) !important;  
+     }
+     .c7dddcde, div[tabindex="0"]:not(._83421f9), ._7436101, .ds-segmented, .ds-native-select .ds-native-select__select, 
+     .ds-button.ds-button--bordered.ds-button--secondary, ._0e98de6, ._58a6d71, ._217e214,
+     .md-code-block > pre {
+       background: var(--C1) !important;   
+     }
+     ._83421f9 ._2f87737, ._7941d9f, ._83421f9:not(.b64fb9ae):hover .eaaaba55, ._0fcaa63 {
+         display: none;
+     }
+     ._77cefa5 ._42b6996 {
+          margin-bottom: 10px;
+     }
+}
