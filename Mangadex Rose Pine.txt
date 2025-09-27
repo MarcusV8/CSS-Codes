@@ -1,0 +1,85 @@
+@-moz-document domain("mangadex.org") {
+        /* Mangadex */
+        :root {
+          --C1: #191724;
+          --C2: #232136;
+          --C3: #393552;
+          --C4: #E0DEF4;
+          --B1: 1px solid var(--C4);
+          --BR1: 15px;
+          --BR2: 5px;
+    }         
+          * {
+               color: var(--C4) !important;
+          }
+          /* Main Page */ 
+          .md-content.flex-grow, .tag.no-wrapper {
+               background: var(--C2) !important;
+          }
+          .drawer, .bg-accent, .navbar-background, .nav-bar, .md-inputwrap {
+               background: var(--C3) !important;
+          }
+           .tag, .md-border, #header-search-input,
+           .md\:flex-grow.rounded-lg.drop-shadow.rounded.custom-opacity.relative.md-btn.flex.items-center.px-3.overflow-hidden.primary.frosted.glow {
+               background: var(--C1) !important;
+          }
+          #header-search-input {
+               z-index: 0;
+          }
+          /* Updates */
+          .chapter-feed__container.details.mb-4, .bg-background.rounded {
+               background: var(--C3) !important;
+          }
+          .item {
+               background: var(--C1) !important;
+          } 
+          /* Library */
+          .manga-card, .select__tabs {
+               background: var(--C3) !important;
+          }
+          /* Options */
+          .profile__container, .select-button {
+               background: var(--C3) !important;
+          }
+          .role-tag, .md-select__border, .md-select-inner-wrap {
+               background: var(--C1) !important;
+          }    
+          /* Chapter */
+          .reader--menu-tab {
+               border-color: var(--C3) var(--C3) transparent transparent !important;
+          }
+          .reader--menu, .reader--meta, .bg-accent-button, .prog-divider.read::after, .slider-ball-tooltip, .progress-wrap, .prog-divider-label {
+               background: var(--C3) !important;
+          }
+          .prog-divider.loaded {
+               background: var(--C2) !important;
+          }
+          .md-btn.accent:not(a.rounded.custom-opacity, button.list__item, button.flex.items-center), .bg-primary, .md-btn.primary, .md-context-menu, #slider-ball,
+          .relative.z-\[2\].pt-6.pb-1.px-4.bg-accent.cursor-pointer.select-none.rounded-md.trnasition.duration-75.border.border-transparent {
+               background: var(--C1) !important;
+          }
+            /* Forum */
+        .p-body-sidebar .block-container, .node-body, .p-body-header, .offCanvasMenu-content, .offCanvasMenu--nav .offCanvasMenu-subList, .structItem, .menu-linkRow, .p-footer, a.filterBar-menuTrigger, .menu-content, .menu-tabHeader, .block--messages .message, div#uaThreadViewContainer,
+    .message.message--quickReply.block-topRadiusContent.block-bottomRadiusContent, .fr-box.fr-basic {
+               background: var(--C3) !important;
+        }
+        .p-pageWrapper, .p-nav, .p-navTop, .offCanvasMenu--nav .offCanvasMenu-header, .p-sidebar, .p-header-content {
+                background: var(--C2) !important;        
+        }
+        .block-header, .node-icon i, .node--newIndicator, .offCanvasMenu--nav .offCanvasMenu-linkHolder.is-selected, .tabs--standalone, .blockMessage, .p-nav-list .p-navEl.is-selected, .pageNav-page>a, .pageNav-jump, a.button--link.button, select.input, .input.input--select, .input, button.button--primary.button, .message-cell.message-cell--user, .blockStatus {
+            background: var(--C1) !important;
+        }
+          /* Hover and Active */
+          .menu__item--active-highlight,  .menu__item--hover-highlight:hover, .select__tab.active, .chapter-grid.flex-grow:hover {
+               background: var(--C1) !important;
+          }
+          .item:hover, .item.active {
+               background: var(--C3) !important;
+          }
+          .tags-row.overflow-y-hidden::after {
+               color: var(--C4) !important;
+          }
+          .description::after, .md-btn::before  {
+               display: none;
+          }
+}
