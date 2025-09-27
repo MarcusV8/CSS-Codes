@@ -1,11 +1,3 @@
-     /* ==UserStyle==
-@name           Duolingo Rose Pine
-@namespace      https://github.com/MarcusV8/CSS-Codes
-@version        1.0.0
-@description    Rose Pine theme for Duolingo.
-@author         MarcusV8
-==/UserStyle== */
-
 @-moz-document domain("duolingo.com") {
                /* Duolingo */
           :root {
