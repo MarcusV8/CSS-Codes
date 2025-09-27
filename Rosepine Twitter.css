@@ -1,23 +1,9 @@
-/* ==UserStyle==
-@name                    Rosepine Twitter
-@namespace               https://github.com/MarcusV8/CSS-Codes
-@version                 1
-@description             Rose Pine Twitter
-@author                  MarcusV8
-@preprocessor            stylus
-
-==/UserStyle== */
 @-moz-document domain("x.com") {
      /* Twitter */
      :root {
-          --C1: #191724;
-          --C2: #232136;
-          --C3: #393552;
-          --C4: #E0DEF4;
-          --B1: 1px solid var(--C4);
-          --BR1: 15px;
-          --BR2: 5px;
+          --C1: #191724; --C2: #232136; --C3: #393552; --C4: #E0DEF4; --B1: 1px solid var(--C4); --BR1: 15px; --BR2: 5px;
      }
+     
      /* Logo */
      [d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"],
     [d="M14.258 10.152L23.176 0h-2.113l-7.747 8.813L7.133 0H0l9.352 13.328L0 23.973h2.113l8.176-9.309 6.531 9.309h7.133zm-2.895 3.293l-.949-1.328L2.875 1.56h3.246l6.086 8.523.945 1.328 7.91 11.078h-3.246zm0 0"] {
@@ -25,17 +11,17 @@
         fill: var(--C4);
    }
      /* Background */
-     [data-testid="primaryColumn"], [data-testid="sidebarColumn"], [data-testid="DMDrawer"], [aria-label="Buscar"], div#layers div[data-testid="DMDrawer"],
+     #placeholder, [data-testid="primaryColumn"], [data-testid="sidebarColumn"], [data-testid="DMDrawer"], [aria-label="Buscar"], div#layers div[data-testid="DMDrawer"],
      body, .r-kemksi, .r-5zmot, .r-o96wvk {
           background-color: var(--C2) !important;
      }
      .r-1kqtdi0 {
           border-color: var(--C4);
           margin-bottom: 7px;
-     }
-     
+     }    
      .r-o96wvk {
           border-radius: var(--BR1);
+          border-right: var(--B1);
      }
      .r-vacyoi {
           padding: 0px ;
@@ -44,28 +30,41 @@
      [data-testid="GrokDrawer"]  {
           height: 50px !important;
      }
+       .r-3qxfft {
+           border-radius: 10px;
+           margin-left: -5px;
+     }
      /* Text */
-      * {
-           color: var(--C4) !important;   
-      }
+     span, svg, a, time, [data-testid="socialContext"] {
+          color: white !important;
+     }
      /* Submenus */
      [data-testid="HoverCard"], [data-testid="Dropdown"], #typeaheadDropdown-2, .r-he10gb, .r-z5qs1h,
      .css-175oi2r.r-w7s2jr.r-kemksi.r-3pj75a, .css-175oi2r.r-1awozwy.r-18u37iz.r-1h3ijdo.r-1777fci.r-f8sm7e.r-13qz1uu.r-3pj75a.r-1ye8kvj {
           background-color: var(--C3) !important;         
      }
+     .css-175oi2r.r-kemksi.r-1mmae3n.r-3pj75a.r-o7ynqc.r-6416eg.r-1ny4l3l.r-1loqt21 {
+          background-color: var(--C3);
+          width: 300px ;
+     }
      /* Buttons */
-    [aria-label*="Seguir"], [aria-label*="Inscrever-se"], .r-1vtznih, .r-l5o3uw, button.r-6gpygo, .css-175oi2r.r-1phboty.r-rs99b7.r-lrvibr.r-1q9bdsx.r-edyy15.r-1ceczpf.r-lp5zef.r-3o4zer.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l {
+    [aria-label*="Seguir"], [aria-label*="Inscrever-se"], .r-1vtznih, .r-l5o3uw, button.r-6gpygo, [role="radio"], button.r-knv0ih, .r-bvmktc, .r-rull8r,
+    .css-175oi2r.r-sdzlij.r-1phboty.r-rs99b7.r-lrvibr.r-2yi16.r-1qi8awa.r-3pj75a.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l {
           background-color: var(--C1) !important;
      }
-     [aria-label*="Seguir"], [aria-label*="Inscrever-se"], .r-o96wvk {
+     [aria-label*="Seguir"], [aria-label*="Inscrever-se"], .r-1g40b8q {
           border: var(--B1) !important;
      }
      /* Grok */
-     .r-g2wdr4, button.r-1fkb3t2, .r-1bnu78o, .r-liew4, [aria-label="Mídia"] {
+     .r-g2wdr4, button.r-1fkb3t2, .r-1bnu78o, .r-liew4, [aria-label="Mídia"], .r-1jm295s, .r-eg6o18, 
+     .css-175oi2r.r-1phboty.r-rs99b7.r-lrvibr.r-1q9bdsx.r-edyy15.r-1ceczpf.r-lp5zef.r-3o4zer.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l {
           background-color: var(--C1) !important;
      }
      .r-z32n2g, .r-1fkb3t2, pre {
           background-color: var(--C3) !important;
+     }
+     .r-ccv82r {
+          padding-top: 22vh !important;
      }
      /* Mensagens */
      .css-175oi2r.r-1fuqb1j.r-deolkf.r-dnmrzs.r-1mmae3n.r-3pj75a.r-173mn98.r-l5o3uw.r-vhj8yc.r-1h6o5vw.r-o7ynqc.r-6416eg.r-1ny4l3l, .r-gu4em3 {
@@ -76,7 +75,7 @@
           overflow-x: hidden;
      }
      .r-1ye8kvj { 
-     max-width: 1100px !important; 
+        max-width: 1100px !important; 
      }
      main[role="main"]>div {
           width: 100dvw !important;
@@ -127,7 +126,7 @@
          margin: 0 !important;
     }
     
-           [data-testid="sidebarColumn"] {
+    [data-testid="sidebarColumn"] {
          position: fixed !important;
          top: 0 !important;
          right: 0 !important;
@@ -165,8 +164,6 @@
          transform: translateX(0) !important;
      }
 
-
-     /* DM Drawer */
      div#layers div[data-testid="DMDrawer"] {
           opacity: 0 !important;
          transform: translateX(90%) !important;
@@ -221,19 +218,17 @@
               left: 0 !important;
          }
     }
-          /* Declutter Page */
-     a[href*='jobs'], a[href*='premium_sign_up'], a[href*='ads'], a[href*='verified-orgs'], a[href*='monetization'], [data-testid="SideNav_NewTweet_Button"],
-    .css-175oi2r.r-18u37iz.r-1h0z5md.r-13awgt0:nth-child(4) , [aria-label="Rodapé"], .css-175oi2r.r-1h8ys4a.r-1mmae3n, div.r-kemksi:nth-child(3) > div:nth-child(1) > div:nth-child(2) {
+     a[href*='premium_sign_up'], a[href*='verified-orgs'], a[href*='monetization'], [data-testid="SideNav_NewTweet_Button"], [data-testid="jobs-tab-item"], a[href*="ads.x.com"], [aria-label="Responder"],
+    .css-175oi2r.r-18u37iz.r-1h0z5md.r-13awgt0:nth-child(4) , [aria-label="Rodapé"], div.r-kemksi:nth-child(3) > div:nth-child(1) > div:nth-child(2), .css-175oi2r.r-1habvwh.r-1ssbvtb.r-1mmae3n.r-3pj75a {
                display: none;
-          }
-     /* Better Links 
+}
      div>a>div {
           .r-loe9s5 {
                bottom: -12px;
                left: -12px;
                height: 25px;
                border-radius: 0;
-               width: 1020px;
+               width: 1070px;
           }
      }
      .r-14fd9ze {
@@ -247,7 +242,7 @@
      }
      div>a>div {
           .r-loe9s5 {
-               background-color: rgb(0, 0, 0);
+               background-color: var(--C1);
           }
           .r-loe9s5 span {
                color: var(--C4);
@@ -256,5 +251,5 @@
      .r-1f55h46 {
           left: unset;
           right: -15px;
-  }*/
+  }
 }  
