@@ -1,26 +1,17 @@
 @-moz-document domain("blogspot.com") {
-               /* Blogspot */                                                                         
+                        /* Blogspot */                                                                         
           :root {
-               --C1: #191724;
-               --C2: #232136;
-               --C3: #393552;
-               --C4: #E0DEF4;
-               --B1: 1px solid var(--C4);
-               --BR1: 15px;
-               --BR2: 5px;
-          }
+               --C1: #191724; --C2: #232136; --C3: #393552; --C4: #E0DEF4; --B1: 1px solid var(--C4); --BR1: 15px; --BR2: 5px;
+        }
              * {
                color: var(--C4) !important;
           }
-          input,
-          textarea,
-          select {
+          input, textarea, select {
                background-color: var(--C1) !important;
                border: var(--B1) !important;
                border-radius: var(--BR2);
           }
-          html,
-          body {
+          html, body {
                background: var(--C2) !important;
           }
            body > header:first-of-type, body > div > [id*="header"] {
@@ -111,4 +102,4 @@
      .sr-reader *:not([class*="sr-pivot"]) {
           color: #E0DEF4 !important;
      }
-}    
+}        
