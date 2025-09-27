@@ -1,0 +1,288 @@
+/* ==UserStyle==
+@name           News Rose Pine
+@namespace      https://github.com/MarcusV8/CSS-Codes
+@version        1.0
+@description    News in Rose Pine 
+@author         Me
+==/UserStyle== */
+@-moz-document regexp("^.*\\b(abril|abcnews|axios|bbc|bloomberg|cbsnews|cnn|cnnbrasil|ctvnews|dutchnews|estadao|exame|folha|globo|odia|neofeed|nytimes|poder360|politico|revistaoeste|semafor|thehill|wsj|zerohedge)\\b.*$|^.*\\b\\w*post\\w*\\.(com|org|net)\\b.*$") {
+            /* Block 1 - General */
+    
+/*Abc News, Axios, BBC, BBC Brasil, Bloomberg, Cbs News, Cnn, Cnn Brasil, Ctvnews, Dutchnews, Estadão, Exame, Extra, Folha, G1, Neofeed, New York Times, Oglobo, Oeste, Poder360, Politico, Politico Eu, Semafor, Thehill, Valor, Veja, Washington Post, WSJ, Zero Hedge*/
+    
+    :root {
+          --C1: #191724; --C2: #232136; --C3: #393552; --C4: #E0DEF4; --B1: 1px solid var(--C4); --BR1: 15px; --BR2: 5px;
+     }
+         * {
+          color: var(--C4) !important;
+          background: initial !important;
+     }
+
+     html, body {
+          background-color: var(--C2) !important;
+     }
+    
+    body > div :is(header, div > header):not(article > header,[class*="name"],[class*="card"],[data-qa="main-full"], [class*="c-content"], .cBDGbs),
+    body > header:first-of-type, body > div :is(footer, div > footer):not([class*="Node"]), body > footer, .Footer {
+         background: var(--C3) !important;
+    }
+    
+    [class*="menu"] {
+        background: inherit !important;
+    }
+    
+    input, textarea, select {
+          background-color: var(--C1) !important;
+          color: var(--C4) !important;
+          border-radius: var(--BR1);
+    }
+    
+    img:not([src*=".svg"]) {
+          border-radius: var(--BR1) !important;
+          border: var(--B1);
+     }
+      
+    /* Block 2 - Individual */
+    
+    /* Abc News */ .XnBOJ:not([aria-selected="true"]),
+    /* Axios */ [aria-label="All topics"], [aria-label="open search"], .transition-colors, .border-interactive-secondary, [data-cy="rubric"], h2.relative, .bg-interactive-primary, .pb-2, .leading-3, #topics-pill-menu,
+    /* Bbc */ .cpHFoI, .emeJAW, .bbc-10pxgv6,
+    /* Bloomberg */ .media-ui-MenuDesktop_dark-amvz3umCggE-, .media-ui-DropdownButton_DropdownButton-OoxGX19AQ8M-, .styles_followContainer__p6lPL, .intercom-select-tag_selectTagContainer-ySEIRso9NPE-, .LinkPill_linkPill__7qMCB,
+    /* Cbs News */ [class*="item--asset-label is-topic"], 
+    /* Cnn Brasil */ .rfm-marquee-container, .duration-200,
+    /* Dutch News */ .nav-md-up .navbar-top, .text-bg-light, .btn-sm,
+    /* Estadao */ .jVXmiA .infos > ul li, .clJJau .tags-list a, .know-more-button,
+    /* Extra */ #mc-read-more-wrapper .mc-read-more-btn, .glbComentarios-initCommentButton,
+    /* Folha */ .c-topics a, .c-button-list__item, .t-soft .c-button,
+    /* Neofeed */ .content-carregar-mais .btncarregarMais,
+    /* NYTimes */ .css-65ydlw:not(:empty), .css-7v35jk, .actionbar-button, .css-1xny6fl,
+    /* O Dia */ .ver--mais__editoria a,
+    /* O Globo */ .header_exposed_menu,
+    /* Oeste */ .section-featured__footer-button, .section-last-videos__button, .category__footer-button, .tv-embed-widget-wrapper__body, .entry-taxonomies a,
+    /* Poder 360 */ .box-highlight__link, .footer-post__subject-list a, .header__visible-content,
+    /* Politico */ .card-flag, .article-nav, .homepageNav, .page-header.on-home:has(.homepageNav) .header:has(.homepageNav).condensed,
+    /* Politico Eu */ .header__menu-toggle, .tags__tags > a, .tags__tags > span,
+    /* Post Millenial */ 
+    /* Semafor */ .styles_nav__NWw_e,
+    /* The Hill */  .featured-cards__headline_list-right--top-category_link__ribbon, .load-more, .widget__title,
+    /* Valor */ .botao-link, .menu-exposto,
+    /* Veja */ .post .content .tags li a, .hot-topics-user-exp, #infinite-handle span, header.veja-mercado .main-menu::before,
+    /* Washington Post */ .wpds-c-bYGFCh,
+    /* WSJ */ .css-1i8hxya-MarketDataStripWrapper,
+    /* Zerohedge */ .BlockComments_showBtn__Ds_Lu { 
+        background: var(--C1) !important;
+    }  
+    
+    /* Dutch News */ .bg-secondary,
+    /* O Dia */ .md-12.sm-8.xs-4 {
+        background: var(--C2) !important;        
+    }
+    
+    /* Abc News */ .navigation, .subNav, .tKgRv, .hQfuy,
+    /* Axios */ .bg-primary, .bg-interactive-primary-selected, [data-headlessui-state="open"], [data-cy="hp-latest"],
+    /* Bbc */ .jdGaiS, .bbc-2xm90o,
+    /* Bloomberg */ .media-ui-LogoBar_dark-q7Ouy-DICYc-, .media-ui-SubmenuDesktop_link-B9b8-zDvba4-, .media-ui-MarketDataDropdown_marketDataDropdownContainer-MfMXpkCLuKI- .media-ui-MarketDataDropdown_marketData-W1p-1QwpzDE-, .media-ui-SubmenuDesktop_submenuText-fStbtfbPGdI-, .media-ui-Footer_footerContainer-48Eos3T24SA-, .ContextualNavContainer_contextualNav__q8uPT, .styles_takeaways__wckJM,
+    /* Cbs News */ .site-header__container, #component-us-subnav, .site-nav__flyout.column-count--2, .content__header, [data-slug="queryly-right-rail-article-recirc"],
+    /* Cnn */ .header__container, .related-content-elevate,
+    /* CNN Brasil */ .bg-neutral-950, .bg-gray-100, .postEntitiesVerticalListing.grid.gap-4.divide-y.pt-4.\[\&\>div\:not\(\:first-child\)\]\:pt-4,
+    /* Ctv News */ .b-header-nav-chain__flyout-nav-wrapper.open,
+    /* Exame */ .md\:w-\[320px\], .shadow-\[0_2px_2px_0px_rgba\(0\,0\,0\,0\.15\)\],
+    /* Folha */ .c-sidebar-menu__content, .c-economic-indicators, .c-weather, .c-horoscope, .c-most-read,
+    /* G1 */ .bstn-hl-wrapper:first-of-type, .post-bastian-products, .post-agrupador-horizontal-g1.theme, 
+    /* Estadão */ .iSEtgR .navbar-container, .jigGWK a, .kSxIJN,
+    /* Neofeed */ .main-header .lateral-navbar.active,
+    /* NYTimes */ .css-m5rkpj, .css-v21ltd, [data-testid*="dropdown"], .css-ljwgip, .css-408a7p,
+    /* O Dia */ .global-menu > .container, .odia-mais-lidas-container-item, .odia-mais-lidas-first-body-item, 
+    /* Oeste */ .desktop-menu .menu-item-has-children .sub-menu .menu-item a, .section-featured__content-news, .content-aside > :not(:first-child),
+    /* Politico */ .articleNav, .nav__main, .border.text-left, .border-gray-35,
+    /* Politico Eu */ .header__menu-area-container, .navigation-mini__menu,
+    /* The Hill */ .site-header, .most-popular-widget .most-popular-items,
+    /* Valor */ [class*="custom-footer"], section[class*="card"]:not(.col-s-12.col-l-9 > .cards), .busca_valor_empresas_360__container--card, .section-data:nth-of-type(1), .section-data:nth-of-type(2), 
+    /* Veja */ .sidebarMenu > ul, .fixed .sub-header::before, #mais_lidas,
+    /* Washington Post */ .wpds-c-gCLoHk-eBagIo-isSticky-true, .wpds-c-Vnyfl[data-state="open"][data-position="left"], .wpds-c-bHXelH-ikoYseZ-css, .wpds-c-bHXelH-ijLYHBl-css,
+    /* WSJ */ .css-1nrueqm-NavGrid, .css-4kobju-NavModalContainer-Content,
+    /* Zero Hedge */ .Header_overflowMenu__tZiuo, .BlockContactInfo_dropdown__n9SPS {
+        background: var(--C3) !important;
+    }
+    
+   /* Abc News*/  html:not(.section-frontdoor) .is-hero {
+        background: none !important;
+       margin-top:  15px;
+    }
+        
+    /* Block 3 - Rounded Elements and Margins */
+  
+    /* Cnn Brasil */ .z-10.flex.w-full.items-center.bg-white.md\:w-fit {
+        max-width: 1800px !important;
+    }
+    /* O Globo  - texto */ .content-text__container {
+        min-height: 0px;
+    }
+    /* Dutch News */ .text-reset, .text-bg-light,
+    /* Politico Eu */ .most-read-articles .article-card::before,
+    /* Revista Oeste */ .\!text-gray-900  {
+        color: var(--C4) !important;
+    }
+    /* Axios*/ [data-cy="hp-latest"], #topics-pill-menu,
+    /* Bbc */ .bbc-10pxgv6, 
+    /* Cbs News */ .content__header, [data-slug="queryly-right-rail-article-recirc"], .hQfuy, .most-popular-widget .most-popular-items,
+    /* Cnn */ .related-content-elevate,
+    /* Folha */ .c-economic-indicators, .c-weather, .c-horoscope, .c-most-read,
+    /* Post Millenial */ 
+    /* Valor */ .section-data:nth-of-type(1), .section-data:nth-of-type(2),
+    /* Veja */ #mais_lidas {
+            border: 1px solid !important;
+            border-radius: 15px !important;
+            padding: 15px !important;
+    }
+    /* Cnn Brasil */ .postEntitiesVerticalListing.grid.gap-4.divide-y.pt-4.\[\&\>div\:not\(\:first-child\)\]\:pt-4,
+    /* Politico */ .card__wrapper, .border.text-left, .py-\[0\.9375rem\], .border-gray-35,
+    /* Valor */ section[class*="card"]:not(.col-s-12.col-l-9 > .cards) {
+            border: 1px solid !important;
+            border-radius: 15px !important;
+    }
+    /* Ctv News */ .b-lead-art-custom__image-wrapper,
+    /* NYT */ .css-153p30m {
+            box-shadow: none;
+    }
+    /* Abc News */.divide-y > :not([hidden]) ~ :not([hidden]) {
+            padding: 15px !important;
+    }
+    #topics-pill-menu {
+        padding: 10px !important;
+    }
+    
+                                                                                        /* Bloco 3a - Superior Panel */
+                                                    
+     
+    /* Abc News, Axios, BBC, BBC Brasil, Bloomberg, Cbs News, Cnn, Cnn Brasil, Ctvnews, Dutchnews, Estadão, Exame, Extra, Folha, G1, Neofeed, New York Times, O globo, Oeste, Poder360, Politico, Politico Eu, Semafor, Thehill, Valor, Veja, Washington Post, WSJ, Zero Hedge */
+    
+    /* Abc News */ .navigation.navigation--topzero,
+    /* Axios */ .bg-primary.fixed.z-30.w-screen.top-0.transition-transform.duration-300.translate-y-\[-272px\].lg\:\!border-primary.translate-y-\[0px\],
+    /* BBC - */ .ixyvdl,
+    /* Bloomberg */ .NavAndContextualNav_nav__hp3Vb,
+    /* Cbs News */ [id*="site-header"],
+    /* CNN Brasil */ .z-40, .z-30,
+    /* Ctv News */ .c-stack.b-right-rail__navigation,
+    /* Exame - */ .will-change-auto,
+    /* Extra - */ #header,
+    /* Folha */ .c-elastic-header--affixed,
+    /* G1 - */ .gui-color-primary-bg.header-principal.header-navegacao-color,
+    /* Neofeed */ .main-header.fixed-menu,
+    /* NYT */ .css-qnmdf1, .css-1q2w90k,
+    /* O dia - */ .global-header,
+    /* Oeste */ .flex.flex-col.sticky.top-0.z-100.bg-white.left-0,
+    /* Poder360 */ .navigation-menu__wrapper,
+    /* Politico */ .article-nav, .header.is-condensed,
+    /* The Hill */ .site-header.sticky,
+    /* Veja */ .fixed .sub-header,
+    /* WSJ */ .css-ea71j7-MainHeader-CollapsedHeader,
+    /* Washington Post */ .wpds-c-exBexp.wpds-c-exBexp-gphgxK-hasDefaultBorder-true.wpds-c-exBexp-gphgxK-variant-primary.wpds-c-exBexp-fAfUZ-isFixed-true.wpds-c-exBexp-ihpjvjV-css.site-nav,
+    /* Zero hedge */ .Header_sticky__EWV6p,
+    [data-test-name="topicbar"] {
+      transform: translateY(-100%);
+      transition: transform 300ms ease-in-out !important;
+      position: fixed;
+      width: 100%;
+    }
+
+    /* Abc News */ .navigation.navigation--topzero:hover,
+    /* Axios */ .bg-primary.fixed.z-30.w-screen.top-0.transition-transform.duration-300.translate-y-\[-272px\].lg\:\!border-primary.translate-y-\[0px\]:hover,
+    /* BBC - */ .ixyvdl:hover,
+    /* Bloomberg */ .NavAndContextualNav_nav__hp3Vb:hover,
+    /* Cbs News */ [id*="site-header"]:hover,
+    /* CNN Brasil */ .z-40:hover, .z-30:hover,
+    /* Ctv News */ .c-stack.b-right-rail__navigation:hover,
+    /* Exame - */ .will-change-auto:hover,
+    /* Extra - */ #header:hover,
+    /* Folha */ .c-elastic-header--affixed:hover,
+    /* G1 - */ .gui-color-primary-bg.header-principal.header-navegacao-color:hover,
+    /* Neofeed */ .main-header.fixed-menu:hover,
+    /* NYT */ .css-qnmdf1:hover, .css-1q2w90k:hover,
+    /* O dia - */ .global-header:hover,
+    /* Oeste */ .flex.flex-col.sticky.top-0.z-100.bg-white.left-0:hover,
+    /* Poder360 */ .navigation-menu__wrapper:hover,
+    /* Politico */ .article-nav:hover, .header.is-condensed:hover,
+    /* The Hill */ .site-header.sticky:hover,
+    /* Veja */ .fixed .sub-header:hover,
+    /* WSJ */ .css-ea71j7-MainHeader-CollapsedHeader:hover,
+    /* Washington Post */ .wpds-c-exBexp.wpds-c-exBexp-gphgxK-hasDefaultBorder-true.wpds-c-exBexp-gphgxK-variant-primary.wpds-c-exBexp-fAfUZ-isFixed-true.wpds-c-exBexp-ihpjvjV-css.site-nav:hover,
+    /* Zero hedge */ .Header_sticky__EWV6p:hover,
+    [data-test-name="topicbar"]:hover {
+      transform: translateY(0);
+    }
+
+    /* Abc News */ .navigation.navigation--topzero::before,
+    /* Axios */ .bg-primary.fixed.z-30.w-screen.top-0.transition-transform.duration-300.translate-y-\[-272px\].lg\:\!border-primary.translate-y-\[0px\]::before,
+    /* BBC - */ .ixyvdl::before,
+    /* Bloomberg */ .NavAndContextualNav_nav__hp3Vb::before,
+    /* Cbs News */ [id*="site-header"]::before,
+    /* CNN Brasil */ .z-40::before, .z-30::before,
+    /* Ctv News */ .c-stack.b-right-rail__navigation::before,
+    /* Exame - */ .will-change-auto::before,
+    /* Extra */ #header::before,
+    /* Folha */ .c-elastic-header--affixed::before,
+    /* G1 - */ .gui-color-primary-bg.header-principal.header-navegacao-color::before,
+    /* Neofeed */ .main-header.fixed-menu::before,
+    /* NYT */ .css-qnmdf1::before, .css-1q2w90k::before,
+    /* O dia - */ .global-header::before,
+    /* Oeste */ .flex.flex-col.sticky.top-0.z-100.bg-white.left-0::before,
+    /* Poder360 */ .navigation-menu__wrapper::before,
+    /* Politico */ .article-nav::before, .header.is-condensed::before,
+    /* The Hill */ .site-header.sticky::before,
+    /* Veja */ .fixed .sub-header::before,
+    /* WSJ */ .css-ea71j7-MainHeader-CollapsedHeader::before,
+    /* Washington Post */ .wpds-c-exBexp.wpds-c-exBexp-gphgxK-hasDefaultBorder-true.wpds-c-exBexp-gphgxK-variant-primary.wpds-c-exBexp-fAfUZ-isFixed-true.wpds-c-exBexp-ihpjvjV-css.site-nav::before,
+    /* Zero hedge */ .Header_sticky__EWV6p::before,
+    [data-test-name="topicbar"]::before {
+      content: '';
+      position: absolute;
+      top: 100%;
+      width: 100%;
+      height: 100px;
+      background: transparent !important;
+    }
+    
+                                                                                        /* Bloco 3b - Lateral Panel */
+    
+    /* Abc News */ .wGrlE > :first-child, .LivePromotion--centered,
+    /* Axios */ .pb-80.sticky.top-40,
+    /* Bbc Brasil */ .bbc-tpioxw,
+    /* Folha */ .col-fixed.col-fixed--md-300.u-no-print.rs_skip, .container {
+        perspective: 500px;
+    }
+
+    /* Abc News */ .hQfuy,
+    /* Axios */ [data-cy="hp-latest"],
+    /* Bbc Brasil */ .bbc-10pxgv6,
+    /* Folha */ .c-most-read {
+        transition: transform 0.5s ease-in-out;
+    }
+
+    /* Abc News */ .hQfuy:hover,
+    /* Axios */ [data-cy="hp-latest"]:hover,
+    /* Bbc Brasil */ .bbc-10pxgv6:hover,
+    /* Folha */ .c-most-read:hover {
+        transform: translateZ(50px);
+    }
+    
+    
+    /* Bloco 4 - Element Removal */
+    
+    /* All */ [class*="copyright" i], div[class*="signup" i], [class*="login" i], [class*="assine" i], [title*="entrar" i], a[class*="subscribe" i]:not(.is-subscriber-only), [title*="assine" i], [id*="login" i], [aria-label*="sign" i]:not(a), [aria-label*="register" i],
+    /* Axios */ .px-6,
+    /* Cnn */ .user-account-nav__icons,
+    /* Ctv news */ .b-standard-list-custom--picks::before, .b-standard-list-custom--rotator::before , .b-header-nav-chain button.b-sign-in-block,
+    /* Dutch News */ .bg-green-light,
+    /* Exame */ .md\:h-\[250px\],
+    /* Folha */ .js-c-elastic-header, .c-list-menu.c-list-menu--insider.c-sidebar-menu__user,
+    /* Nytimes */ .css-1rey5yq,
+    /* Poder 360 */ .button-poder-monitor,
+    /* Politico */ .md\:pt-\[1\.875rem\], .articleNav::after, .nav__adslot, .nav-footer, .secondary-nav::after, .secondary-nav::before, .article-nav::after, .header.is-condensed .header__ctas, .header__ctas,
+    /* Revista Oeste */ .single .cta--double, .ro-cta, .btn--bf,
+    /* Semafor */ .styles_link__yd_Ht,
+    /* The Hill */ [id*="civsci"],
+    /* Veja */ body.new-exp-logada.fixed .new-exp-logada-enter, .sidebar-sign-search {
+        Display: none !important;
+    }
+}
