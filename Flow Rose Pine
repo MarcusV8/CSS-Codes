@@ -1,0 +1,27 @@
+/* ==UserStyle==
+@name           labs.google/fx/pt/tools/flow
+@namespace      github.com/openstyles/stylus
+@version        1.0.0
+@description    A new userstyle
+@author         Me
+==/UserStyle== */
+
+@-moz-document url-prefix("https://labs.google/fx/pt/tools/flow") {
+        /* Flow */
+    .dldPfS {
+        background: var(--C2) !important;
+    }
+    .fXsrxE {
+        background: var(--C1) !important;
+    }
+    /* Projects*/
+    .eOJOfB {
+        background: var(--C2) !important;
+    }
+    .gghiFF {
+        background: var(--C3) !important;
+    }
+    .jUTuVk, .kJzqsZ, .juaPys, .cCDcFP, .jPkMde {
+        background: var(--C1) !important;
+    }
+}
