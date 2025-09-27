@@ -1,0 +1,56 @@
+@-moz-document domain("wordpress.com") {          
+               /* Wordpress */
+     :root { 
+         --C1: #191724; --C2: #232136; --C3: #393552; --C4: #E0DEF4; --B1: 1px solid var(--C4); --BR1: 15px; --BR2: 5px;
+    }
+    
+       * {
+          color: var(--C4) !important;
+     }
+      body {
+          background: var(--C2) !important;     
+      }
+      body > header:first-of-type, body > div > [id*="header"], .site-footer, #header, #footer-bott, .entry-footer {
+               background: var(--C3) !important;
+       }
+       img:not([src*=".svg"]) {
+               border-radius: var(--BR1) !important;
+               border: var(--B1);
+       }
+        input, textarea, select {
+               background-color: var(--C1) !important;
+               border: var(--B1) !important;
+               border-radius: var(--BR2);
+          }
+    
+                /* Main Page */
+    
+   .block-editor-block-toolbar, .commentlist li, .comments-link a, .current_page_item > a, .editor__header, .entry-date, .entry-footer .left, .entry-title, .featured-post, .has-light-blue-background-color, .has-marketing-bar .site-header, .main-navigation, .main-navigation *, .menu-header a, .menu-toggle, .more-link, .navigation.section.no-padding.bg-dark, .navigation-bar, .post .tags a, .post-date em, .postinfo, .sd-button, .secondary-navigation li, .site::before, .stick, .tag-links a, .tags-links a, .wp-block-button__link, .wp-block-button__link.wp-element-button, .wp-block-navigation:not(.has-text-color) .wp-block-navigation__submenu-container, [class*="tag_cloud"], #actionbar, #comment-submit, #content nav div a, #infinite-handle span, #infinite-handle span button, #menu a, #nav, #searchsubmit, #sidebar h2, #tabs ul li ul a{
+          background: var(--C1) !important;
+    }
+body::before, .entry-content, .entry-header, .entry-meta, .entrymeta, .hentry, .obar ul li, .site-main, .sidebar ul li, .top-image, #container, #content, #footer, #nav-post, #page, #respond, #secondary::before, #sidebar, #wrap, #wrapper {
+         background: var(--C2) !important;
+    }
+    .post-meta, .search-box, .search-full, .sticky-post, .tip-inner, .widget-wrapper, .wp-block-group.has-background, .wp-caption, #access, #masthead, #respond.comment-respond form#commentform .comment-form__verbum.transparent, aside[class*="widget"] {
+        background: var(--C3) !important;
+    }
+    .site-main, aside[class*="widget"] {
+        border-radius: 15px;
+        border: 1px solid;
+        padding: 15px;
+        box-sizing: border-box;
+    }
+
+    .has-marketing-bar .site-header, .has-marketing-bar.masthead-fixed .site-header {
+        top: 0;
+    }
+    .navigation.site-navigation.secondary-navigation {
+        margin : 0 -45px 48px;
+    }
+    #wrap {
+        border: none;
+    }
+    #infinite-footer .container, #eu-cookie-law, #marketingbar.marketing-bar, #wrapper .primary {
+        display: none !important;
+    }
+}
