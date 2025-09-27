@@ -1,17 +1,5 @@
-/* ==UserStyle==
-@namespace      https://github.com/MarcusV8/CSS-Codes
-@name           Userstyles Rose Pine 
-@version        1
-@description    Theme for Userstyles World.
-@preprocessor   stylus
-@author         MarcusV8
-
 @-moz-document domain("userstyles.world") {
      /* Userstyles World*/
-    
-     /*========================================*/
-     /*            Generic Elements            */
-     /*========================================*/
      
      :root {
           --C1: #191724;
