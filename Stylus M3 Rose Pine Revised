@@ -1,10 +1,4 @@
-/* ==UserStyle==
-@name         Stylus M3
-@version      0
-@namespace    https://github.com/MarcusV8/CSS-Codes
-==/UserStyle== */
-
-@-moz-document url-prefix("moz-extension://852f70b1-1c6d-4788-a4b2-3c4209e2a6bd") {
+@-moz-document url-prefix("moz-extension://") {
      /* Stylus M3*/
      :root {
           --C1: #191724;
@@ -125,7 +119,7 @@
      /* Buttons */
      button {
           background: none;
-          background-color: var(--C1);
+          background-color: var(--C1) !important;
           border-radius: 80px;
           padding: 8px;
           padding-left: 16px;
@@ -147,6 +141,12 @@
           background: none;
           background-color: var(--button-filled-disabled-color) !important;
           color: #ffffff47;
+     }
+     #options-btn {
+          padding: 5px !important;
+     }
+     #livePreview-settings summary {
+          padding-top: 15px !important;
      }
      /* Header */
      @media (min-width: 850px) {
@@ -333,7 +333,7 @@
           }
      }
 }
-@-moz-document url-prefix("moz-extension://852f70b1-1c6d-4788-a4b2-3c4209e2a6bd/edit.html") {
+@-moz-document url-prefix("moz-extension://") {
      /* Editor Header */
      .compact-layout #header {
           border-bottom: none;
@@ -398,14 +398,14 @@
           color: var(--fg) !important;
           position: absolute;
           top: 0;
-          z-index: -1;
+          z-index: 0;
           margin-top: 9px;
           margin-left: 11px;
      }
      .compact-layout #header.sticky #details-wrapper>details#options::after {
           content: "⛭" !important;
           font-size: 16px;
-          margin-top: 10px;
+          margin-top: 15px;
           margin-left: 9px;
      }
      .compact-layout #header.sticky #details-wrapper>details#sections-list::after {
@@ -457,7 +457,7 @@
           max-height: unset !important;
      }
 }
-@-moz-document url-prefix("moz-extension://852f70b1-1c6d-4788-a4b2-3c4209e2a6bd/edit.html") {
+@-moz-document url-prefix("moz-extension://") {
      /* Editor Collapsible menus */
      :root {
           --cl-collapsible-menu-height: 34px;
@@ -524,7 +524,7 @@
           display: none;
      }
 }
-@-moz-document url-prefix("moz-extension://852f70b1-1c6d-4788-a4b2-3c4209e2a6bd/edit.html") {
+@-moz-document url-prefix("moz-extension://") {
      /* Editor page */
      /* Code mirror */
      .CodeMirror {
@@ -706,7 +706,7 @@
           background: none !important;
      }
 }
-@-moz-document url-prefix("moz-extension://852f70b1-1c6d-4788-a4b2-3c4209e2a6bd/manage.html") {
+@-moz-document url-prefix("moz-extension://") {
      /* Manager page */
      /* Collapsible menus */
      .settings-column {
