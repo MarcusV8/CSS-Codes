@@ -1,0 +1,53 @@
+@-moz-document domain("gemini.google.com") { 
+     /* Gemini */
+     :root {
+          --C1: #191724;
+          --C2: #232136;
+          --C3: #393552;
+          --C4: #E0DEF4;
+          --B1: 1px solid var(--C4);
+          --BR1: 15px;
+          --BR2: 5px;
+     }
+       * {
+          color: var(--C4) !important;
+     }    
+          /* Home  */
+     .sidenav-with-history-container.disable-onload-animations.ng-star-inserted.expanded, bard-sidenav, div[class*="height-expanded"], .desktop-controls {
+          background: var(--C3) !important;
+     }
+     bard-sidenav-content, .chat-container, input-container, flex-window-container, button.mat-ripple[aria-pressed="true"] {
+           background: var(--C2) !important;
+     }
+     .condensed-prompt-container, .mat-mdc-card, .mat-ripple:not(:empty), [aria-label*="menu" i], [aria-label="Microfone"], [mattooltip="Tela cheia"], [aria-label="Enviar mensagem"], .gds-body-l.ng-star-inserted, .mat-mdc-icon-button {
+          background: var(--C1) !important;
+     }
+          /* Chat */ 
+      .response-container, .immersives-mode {
+          background: var(--C2) !important;
+     }
+     .mat-mdc-tooltip-surface, .code-block-decoration.header-formatted, .formatted-code-block-internal-container, .expandable-button, .mdc-snackbar__surface.mat-mdc-snackbar-surface {
+          background: var(--C1) !important;
+     }
+     .mat-mdc-menu-panel, .user-query-bubble-with-background, .regular-prompt-container, .mat-mdc-dialog-surface, .upgrade-to-continue {
+          background: var(--C3) !important;
+     }
+          /* Research and Config */
+     .toolbar, .container, #extended-response-message-content, button[mat-flat-button], button[mat-stroked-button], .disclaimer, .disclaimer-container.information {
+          background: var(--C1) !important;          
+    }
+     .memory.ng-star-inserted, .card, async-processing-chip, code:not([data-test-id="code-content"]), .contextual-discovery-response-promotion {
+          background: var(--C3) !important;
+     }
+          /* Border and Margins */
+          input-container {
+               margin-bottom: 15px;
+          }
+          /* Declutter Page */
+          .input-gradient::before, .gds-label-m-alt {
+               display: none ;
+          }
+          .contextual-discovery-response-promotion, .mat-mdc-menu-panel {
+               border-radius: var(--BR1) ;
+          }
+}
