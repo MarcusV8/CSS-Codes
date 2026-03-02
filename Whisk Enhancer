@@ -1,0 +1,302 @@
+// ==UserScript==
+// @name         Whisk Enhancer
+// @namespace    http://tampermonkey.net/
+// @version      22.0
+// @description  Whisk Automation - Hex Colors & Targeted UI Hide
+// @author       Gemini
+// @match        https://labs.google/fx/tools/whisk/*
+// @grant        GM_addStyle
+// @icon         https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrGkNYiowynGMOt9dIleuEu541zUoA9d2DEQ&s
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    const SEL = { mainGridBtn: ".iCCEfi", img: '.sc-12e568c9-0.dKRdkO', delBtn: '.ljxCIZ, button[aria-label="Delete image"], button[aria-label="Excluir imagem"]', dialog: 'div[role="dialog"][data-state="open"]', modalSubmitBtn: 'button[aria-label="Submit prompt"]' };
+    const STATE = { theme: localStorage.getItem('userStyleEnabled') === 'true', clicker: { active: false, count: 0, max: 0, int: 20000, id: null, setting: false }, del: { mode: 'none', dragging: false, start: {x:0, y:0}, deleting: new Set() }, isInAdjustMode: false, inputLock: false };
+    const CSS_UI = '#fx-wrap{position:fixed!important;bottom:0!important;right:0!important;z-index:2147483647!important;padding:25px;transition:none;pointer-events:auto!important}#fx-bg{position:fixed;bottom:10px;right:10px;width:50px;height:50px;border-radius:50%;background:transparent;box-shadow:0 4px 8px #0003;opacity:0;pointer-events:none;transition:.3s}#fx-stat{position:fixed;bottom:10px;right:10px;width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#E0DEF4;cursor:pointer;transition:.2s}#fx-wrap:hover #fx-stat{transform:scale(1.1)}#fx-wrap:hover #fx-bg{opacity:1;background:#393552}#fx-bg.act{background:#393552!important;opacity:1!important}#fx-bg.vis{opacity:1;background:#393552}#fx-inp{display:none;position:fixed;bottom:10px;right:10px;width:50px;height:50px;border-radius:50%;border:2px solid #E0DEF4;background:#232136;color:#E0DEF4;text-align:center;font-weight:700;outline:0}#fx-inp.int{border-color:#ebbcba}.fx-notif{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:5px;color:#E0DEF4;background:#191724;z-index:2147483647;box-shadow:0 2px 10px #0003;display:none}@keyframes fadeInOut{0%,100%{opacity:0;transform:translateY(20px)}15%,85%{opacity:1;transform:translateY(0)}}.del-sel{outline:3px solid #c4a7e7!important;box-shadow:0 0 15px #c4a7e799!important}#sel-box{position:fixed;background:#c4a7e733;border:1px solid #c4a7e7cc;z-index:9998;pointer-events:none;display:none}body.hide-site-ui .bHrerO{display:none!important}';
+    const CSS_THEME = `*,::placeholder{color:#E0DEF4!important} .cLvfjP,.iOwQjE,.liKMuP,.bHrerO,.bxqbco,.cotrDq,.tVPTB,.eCUaZJ,.hwlIYv,.hRxVKl,.kPnWli,.eNNJoZ,.RIXWJ,.bHrerR,.kdxtcb,.lgqRRf,.fOJmic,.iIEcfD {background:#393552!important} .iCCEfi,.hcknPs,.gAcCIm,.bparEm,.bHrerR,.hBtOiW,.hspRa-D,.chEALU,.bLZoHM,.jUhqTQ,.jBHYLm,.jwkAG,.bSSoa-D,.eZDSgD,.dbvySK,.fJeWwq,.bHkdUa,.exTqEo,.gSCipm,.hfYwHN,.gOPjYK,.fMLcah[data-state="active"],.blzeYI,.hwNurC,.etkaTj,.ldIyCS,.hVamcH,.kcESlt {background:#191724!important} .gWSEUw,.gESWFH,.gnDSkz,.kBUWcI,.kfmSCl,[data-testid="virtuoso-scroller"],.cSgDza,.iOsBMm,.bkTOsb,.hbxalr,.clcBKg,.hVamcH,.gmBtSa,.dyzQer {background:#232136!important} .hJdnte{border-top:1px solid #E0DEF4}.fPyhJt{border:1px solid #E0DEF4}.joaCbM{grid-template-columns:repeat(5,1fr)}.esCEgh{overflow:initial;margin-top:-70px}.chEALU{height:46rem;width:20rem}.sc-fb72904e-10.ksORwB{width:70%;margin-left:8rem}.sc-fb72904e-9.FgHsyJ{display:flex;justify-content:center}.hBtOiW{width:104%}.iPzmIG,.qhLEr{gap:0;margin:-10px}.evibFg{gap:15px}.lhBPAS,.fxalgY,.cBQOoa,.iwAjan,.dQLJPi,.hTDaec,.izaVpj,.iqybbl,.hhAysj,.jpBIgn,.jEIPwq,.cOwwXp,.jNVpJE,.kQjPuL,.glSDTF,.bxHECj, .gUAtfU {display:none}`;
+
+    let ui = {}, box, notif, titleObserver;
+    const origTitle = document.title;
+    let hasFinished = false;
+
+    const $ = (s, c = document) => c.querySelector(s);
+    const $$ = (s, c = document) => c.querySelectorAll(s);
+
+    const notify = (msg, time = 3000) => {
+        if(!notif) {
+            notif = document.createElement('div');
+            notif.className = 'fx-notif';
+            document.body.appendChild(notif);
+        }
+        notif.textContent = msg;
+        notif.style.display = 'block';
+        notif.style.animation = 'none';
+        notif.offsetHeight;
+        notif.style.animation = 'fadeInOut 3s forwards';
+        if(time > 0) setTimeout(() => notif.style.display = 'none', time);
+    };
+
+    const simClick = (el) => ['mousedown','mouseup','click'].forEach(evt =>
+        el.dispatchEvent(new MouseEvent(evt, {bubbles:true, cancelable:true})));
+
+    let styleTag;
+    const applyTheme = () => {
+        if(styleTag) styleTag.textContent = STATE.theme ? CSS_THEME : '';
+        else if(STATE.theme) {
+            styleTag = document.createElement('style');
+            styleTag.textContent = CSS_THEME;
+            document.head.appendChild(styleTag);
+        }
+    };
+    const toggleTheme = () => {
+        STATE.theme = !STATE.theme;
+        localStorage.setItem('userStyleEnabled', STATE.theme);
+        applyTheme();
+    };
+    if(STATE.theme) applyTheme();
+
+    const manageInterface = () => {
+        const dialog = document.querySelector(SEL.dialog);
+        STATE.isInAdjustMode = !!(dialog && (dialog.offsetParent !== null || window.getComputedStyle(dialog).display !== 'none'));
+
+        if (ui.wrap && ui.wrap.parentNode !== document.body) {
+            document.body.appendChild(ui.wrap);
+        }
+    };
+
+    const forceTitle = () => {
+        if (STATE.clicker.active) {
+            const desired = `[Gerando] ${STATE.clicker.count}/${STATE.clicker.max}`;
+            if(document.title !== desired) document.title = desired;
+        }
+    };
+
+    const enableTitleGuard = () => {
+        if (!titleObserver) {
+            const titleEl = document.querySelector('title');
+            if (titleEl) {
+                titleObserver = new MutationObserver(forceTitle);
+                titleObserver.observe(titleEl, { childList: true, subtree: true, characterData: true });
+            }
+        }
+    };
+
+    const disableTitleGuard = () => {
+        if (titleObserver) {
+            titleObserver.disconnect();
+            titleObserver = null;
+        }
+    };
+
+    const updateTitleLogic = () => {
+        if (!STATE.clicker.active) {
+            if (hasFinished) document.title = "Sucesso!";
+            else document.title = origTitle;
+        } else {
+            forceTitle();
+        }
+    };
+
+    const updateClickerUI = () => {
+        ui.stat.textContent = STATE.clicker.active ? `${STATE.clicker.count}/${STATE.clicker.max}` : 'OFF';
+        ui.bg.classList.toggle('act', STATE.clicker.active);
+        updateTitleLogic();
+    };
+
+    const stopClicker = (finished = false) => {
+        STATE.clicker.active = false;
+        clearInterval(STATE.clicker.id);
+        disableTitleGuard();
+        hasFinished = finished;
+        updateClickerUI();
+    };
+
+    const runClicker = () => {
+        if(STATE.clicker.count >= STATE.clicker.max) return stopClicker(true);
+        updateTitleLogic();
+
+        let btn = null;
+        if (STATE.isInAdjustMode) {
+            const dialog = document.querySelector(SEL.dialog);
+            if(dialog) btn = dialog.querySelector(SEL.modalSubmitBtn);
+        } else {
+            btn = $(SEL.mainGridBtn);
+        }
+
+        if(btn && !btn.disabled) {
+            btn.click();
+
+            if (!STATE.isInAdjustMode) {
+                setTimeout(() => btn.click(), 150);
+                setTimeout(() => btn.click(), 300);
+            }
+
+            STATE.clicker.count++;
+            updateClickerUI();
+        }
+    };
+
+    const startClicker = (n) => {
+        if(!n || n <= 0) return;
+        STATE.clicker.max = n; STATE.clicker.count = 0; STATE.clicker.active = true;
+        hasFinished = false;
+        ui.bg.classList.add('vis'); setTimeout(() => ui.bg.classList.remove('vis'), 5000);
+
+        enableTitleGuard();
+        updateClickerUI();
+        runClicker();
+
+        STATE.clicker.id = setInterval(runClicker, STATE.clicker.int);
+    };
+
+    const setDelMode = (m) => {
+        STATE.del.mode = m;
+        document.body.classList.remove('mode-click', 'mode-drag');
+        if(m !== 'none') document.body.classList.add(`mode-${m}`);
+        notify(m === 'click' ? `Clique para marcar. ENTER apaga.` : (m === 'drag' ? `Arraste para marcar. ENTER apaga.` : 'Modo Seleção OFF'));
+        if(m === 'none') $$('.del-sel').forEach(el => el.classList.remove('del-sel'));
+    };
+
+    const execDel = async () => {
+        const items = [...$$('.del-sel')];
+        if(!items.length) return;
+        setDelMode('none');
+
+        const process = async (i) => {
+            if(i >= items.length) return;
+            const btn = items[i].querySelector(SEL.delBtn);
+            items[i].classList.remove('del-sel');
+            if(btn) simClick(btn);
+            setTimeout(() => process(i+1), Math.random() * 2000 + 1000);
+        };
+        process(0);
+    };
+
+    const buildUI = () => {
+        GM_addStyle(CSS_UI);
+        ui.wrap = document.createElement('div'); ui.wrap.id = 'fx-wrap';
+        ui.bg = document.createElement('div'); ui.bg.id = 'fx-bg';
+        ui.stat = document.createElement('div'); ui.stat.id = 'fx-stat'; ui.stat.textContent = 'OFF';
+        ui.inp = document.createElement('input'); ui.inp.id = 'fx-inp'; ui.inp.placeholder = '#';
+
+        ui.wrap.append(ui.bg, ui.stat, ui.inp);
+        document.body.append(ui.wrap);
+
+        const stopProp = (e) => { e.stopPropagation(); };
+        ['pointerdown', 'mousedown', 'click', 'touchstart'].forEach(evt => {
+            ui.wrap.addEventListener(evt, stopProp);
+        });
+
+        box = document.createElement('div'); box.id = 'sel-box';
+        document.body.append(box);
+
+        ui.stat.onclick = (e) => {
+            e.stopPropagation();
+            if(STATE.clicker.active) {
+                stopClicker(false);
+            } else {
+                toggleInput(true);
+            }
+        };
+
+        ui.wrap.oncontextmenu = (e) => {
+            e.preventDefault(); e.stopPropagation();
+            if(!STATE.clicker.active) toggleInput(true);
+        };
+
+        ui.inp.onblur = () => {
+            if(STATE.inputLock) return;
+            ui.inp.value = '';
+            ui.inp.style.display = 'none';
+            ui.stat.style.display = 'flex';
+        };
+
+        ui.inp.onkeydown = (e) => {
+            e.stopPropagation();
+            if(e.key === 'Enter') {
+                const v = parseFloat(ui.inp.value);
+                ui.inp.value = '';
+                if(STATE.clicker.setting) {
+                    if(v > 0) { STATE.clicker.int = v * 1000; if(STATE.clicker.active) { clearInterval(STATE.clicker.id); STATE.clicker.id = setInterval(runClicker, STATE.clicker.int); } }
+                } else startClicker(parseInt(v));
+                ui.inp.blur();
+            }
+        };
+    };
+
+    const toggleInput = (show) => {
+        if(show) {
+            STATE.inputLock = true;
+            ui.inp.value = '';
+            ui.stat.style.display = 'none';
+            ui.inp.style.display = 'block';
+            setTimeout(() => {
+                ui.inp.focus();
+                setTimeout(() => { STATE.inputLock = false; }, 500);
+            }, 100);
+        } else {
+            ui.inp.blur();
+        }
+    };
+
+    window.addEventListener('focus', () => {
+        if(!STATE.clicker.active && hasFinished) {
+            document.title = origTitle;
+            hasFinished = false;
+        }
+    });
+
+    setInterval(manageInterface, 500);
+
+    document.addEventListener('keydown', (e) => {
+        if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+        const k = e.key.toLowerCase();
+        if(e.shiftKey) {
+            if(k === 'u') toggleTheme();
+            else if(k === 'i') toggleInput(false);
+            else if(k === 's') setDelMode(STATE.del.mode === 'click' ? 'none' : 'click');
+            else if(k === 'e') setDelMode(STATE.del.mode === 'drag' ? 'none' : 'drag');
+            else if(k === 'z') document.body.classList.toggle('hide-site-ui');
+        } else if(STATE.del.mode !== 'none') {
+            if(k === 'escape') setDelMode('none');
+            else if(k === 'enter') execDel();
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if(STATE.del.mode === 'click') {
+            const el = e.target.closest(SEL.img);
+            if(el) { e.preventDefault(); e.stopPropagation(); el.classList.toggle('del-sel'); notify(`${$$('.del-sel').length} marcados`); }
+        }
+    }, true);
+
+    document.addEventListener('mousedown', (e) => {
+        if(STATE.del.mode === 'drag' && e.button === 0) {
+            e.preventDefault(); STATE.del.dragging = true; STATE.del.start = {x: e.clientX, y: e.clientY};
+            Object.assign(box.style, {left:`${e.clientX}px`, top:`${e.clientY}px`, width:0, height:0, display:'block'});
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if(!STATE.del.dragging) return;
+        const w = e.clientX - STATE.del.start.x, h = e.clientY - STATE.del.start.y;
+        Object.assign(box.style, {
+            width: `${Math.abs(w)}px`, height: `${Math.abs(h)}px`,
+            left: `${w>0 ? STATE.del.start.x : e.clientX}px`, top: `${h>0 ? STATE.del.start.y : e.clientY}px`
+        });
+        const bRect = box.getBoundingClientRect();
+        $$(SEL.img).forEach(el => {
+            const iRect = el.getBoundingClientRect();
+            const hit = !(iRect.right < bRect.left || iRect.left > bRect.right || iRect.bottom < bRect.top || iRect.top > bRect.bottom);
+            el.classList.toggle('del-sel', hit);
+        });
+    });
+
+    document.addEventListener('mouseup', () => {
+        if(STATE.del.dragging) { STATE.del.dragging = false; box.style.display = 'none'; notify(`${$$('.del-sel').length} marcados`); }
+    });
+
+    buildUI();
+})();
