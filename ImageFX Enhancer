@@ -1,0 +1,150 @@
+// ==UserScript==
+// @name         ImageFX Enhancer
+// @namespace    http://tampermonkey.net/
+// @version      4.6
+// @description  Automate image generation on ImageFX
+// @author       Gemini
+// @match        https://labs.google/fx/tools/image-fx*
+// @grant        GM_addStyle
+// @icon         https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrGkNYiowynGMOt9dIleuEu541zUoA9d2DEQ&s
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    const SEL = { genBtn: 'button.fzQimn', input: '[role="textbox"][contenteditable="true"]', loading: '.frioDc', success: 'img.fphGdf, .ksOXZ', error: '.hvWBhl, .jGLhJm' };
+    const STATE = { theme: localStorage.getItem('fxStyleEnabled') === 'true', clicker: { active: false, count: 0, max: 0, id: null, mode: 'normal', session: 1, status: '', batchStage: 'idle' } };
+
+    let ui = {};
+    const origTitle = document.title;
+    const $ = (s, c = document) => c.querySelector(s);
+    const $$ = (s, c = document) => c.querySelectorAll(s);
+
+    const CSS_THEME = `:root{--C1:#191724!important;--C2:#232136!important;--C3:#393552!important;--C4:#E0DEF4!important;--B1:1px solid var(--C4)!important;--BR1:15px!important;--BR2:5px!important} * {color: var(--C4) !important} .kmPXcP, .iJIwdq, .iJGuyH, .gdArnN, .gVpgLt, .bYdcxR, [data-state="open"], .hVTOBR, .fyDfHs, .jFSPur, .gURvzX, .fzQimn, .jtikFS {background: var(--C1) !important} .hVamcH {background: var(--C2) !important; filter: blur(2px) !important;} #__next {background: var(--C2) !important} .gfXGmV, .bjGsVW, .hdvhUd, .emRbxW {background: var(--C3) !important} .fWDogB, .iCthSP, .diRZQZ, .dcXHzR, .gmpzld, .cuSmLp { display: none !important; }`;
+    const CSS_UI = `
+        #fx-wrap { position: fixed !important; bottom: 0 !important; right: 0 !important; z-index: 2147483647 !important; padding: 25px; pointer-events: auto !important; }
+        #fx-bg { position: fixed; bottom: 10px; right: 10px; width: 50px; height: 50px; border-radius: 50%; background: transparent; box-shadow: 0 4px 8px #0003; opacity: 0; pointer-events: none; transition: .3s; }
+        #fx-stat { position: fixed; bottom: 10px; right: 10px; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #E0DEF4; cursor: pointer; transition: .2s; }
+        #fx-wrap:hover #fx-stat { transform: scale(1.1); }
+        #fx-wrap:hover #fx-bg { opacity: 1; background: #393552; }
+        #fx-bg.act { background: #393552 !important; opacity: 1 !important; outline: 2px solid var(--C4) !important; outline-offset: -2px; }
+        #fx-inp { display: none; position: fixed; bottom: 10px; right: 10px; width: 50px; height: 50px; border-radius: 50%; border: 2px solid #E0DEF4; background: #232136; color: #E0DEF4; text-align: center; font-weight: 700; outline: 0; }
+    `;
+
+    let styleTag;
+    const applyTheme = () => { if(styleTag) styleTag.textContent = STATE.theme ? CSS_THEME : ''; else if(STATE.theme) { styleTag = document.createElement('style'); styleTag.textContent = CSS_THEME; document.head.appendChild(styleTag); } };
+    const toggleTheme = () => { STATE.theme = !STATE.theme; localStorage.setItem('fxStyleEnabled', STATE.theme); applyTheme(); };
+    if(STATE.theme) applyTheme();
+
+    const updateTitleLogic = () => {
+        if (!STATE.clicker.active) { document.title = STATE.clicker.status === 'success' ? "[Sucesso]" : (STATE.clicker.status === 'fail' ? "[Falha]" : origTitle); return; }
+        let current = STATE.clicker.mode === 'batch' ? STATE.clicker.session : STATE.clicker.count;
+        document.title = `${current}/${STATE.clicker.max} [Gerando]`;
+    };
+
+    const updateClickerUI = () => {
+        let current = STATE.clicker.mode === 'batch' ? STATE.clicker.session : STATE.clicker.count;
+        ui.stat.textContent = STATE.clicker.active ? `${current}/${STATE.clicker.max}` : 'OFF';
+        ui.bg.classList.toggle('act', STATE.clicker.active); updateTitleLogic();
+    };
+
+    const stopClicker = (status = '') => { STATE.clicker.active = false; STATE.clicker.status = status; clearInterval(STATE.clicker.id); STATE.clicker.id = null; updateClickerUI(); };
+
+    const runNormalMode = () => {
+        const isLoading = $$(SEL.loading).length > 0;
+        const successEl = $(SEL.success);
+        const errorEl = $(SEL.error);
+
+        if (!isLoading && successEl && STATE.clicker.batchStage === 'generating') return stopClicker('success');
+
+        if (!isLoading && errorEl && STATE.clicker.batchStage === 'generating') {
+            STATE.clicker.count++;
+            STATE.clicker.batchStage = 'idle';
+            if (STATE.clicker.count > STATE.clicker.max) return stopClicker('fail');
+            updateClickerUI();
+            return;
+        }
+
+        const btn = $(SEL.genBtn);
+        if (STATE.clicker.batchStage === 'idle') {
+            if (btn && !btn.disabled) {
+                btn.click();
+                STATE.clicker.batchStage = 'clicked';
+                updateClickerUI();
+            }
+        } else if (STATE.clicker.batchStage === 'clicked') {
+            if ((btn && btn.disabled) || isLoading) STATE.clicker.batchStage = 'generating';
+        }
+    };
+
+    const runBatchMode = () => {
+        const btn = $(SEL.genBtn);
+        const isLoading = $$(SEL.loading).length > 0;
+
+        if (STATE.clicker.batchStage === 'idle') {
+            if (btn && !btn.disabled) {
+                btn.click();
+                STATE.clicker.batchStage = 'clicked';
+                updateClickerUI();
+            }
+        } else if (STATE.clicker.batchStage === 'clicked') {
+            if ((btn && btn.disabled) || isLoading) STATE.clicker.batchStage = 'generating';
+        } else if (STATE.clicker.batchStage === 'generating') {
+            if (btn && !btn.disabled && !isLoading) {
+                STATE.clicker.session++;
+                if (STATE.clicker.session > STATE.clicker.max) return stopClicker('success');
+                STATE.clicker.batchStage = 'idle';
+                updateClickerUI();
+            }
+        }
+    };
+
+    const runClicker = () => {
+        if (!STATE.clicker.active) return;
+        if (STATE.clicker.mode === 'normal') runNormalMode();
+        else runBatchMode();
+    };
+
+    const startClicker = (n, mode = 'normal') => {
+        STATE.clicker.max = n;
+        STATE.clicker.count = 1;
+        STATE.clicker.session = 1;
+        STATE.clicker.active = true;
+        STATE.clicker.mode = mode;
+        STATE.clicker.batchStage = 'idle';
+        STATE.clicker.status = '';
+        updateClickerUI();
+        STATE.clicker.id = setInterval(runClicker, 1000);
+    };
+
+    const buildUI = () => {
+        GM_addStyle(CSS_UI);
+        ui.wrap = document.createElement('div'); ui.wrap.id = 'fx-wrap'; ui.bg = document.createElement('div'); ui.bg.id = 'fx-bg'; ui.stat = document.createElement('div'); ui.stat.id = 'fx-stat'; ui.stat.textContent = 'OFF'; ui.inp = document.createElement('input'); ui.inp.id = 'fx-inp'; ui.inp.placeholder = '#';
+        ui.wrap.append(ui.bg, ui.stat, ui.inp); document.body.append(ui.wrap);
+
+        ui.stat.onclick = (e) => { e.stopPropagation(); if(STATE.clicker.active) stopClicker(); else { STATE.clicker.mode = 'normal'; toggleInput(true); } };
+        ui.stat.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); if(!STATE.clicker.active) { STATE.clicker.mode = 'batch'; toggleInput(true); } };
+
+        ui.inp.onblur = () => { setTimeout(() => { ui.inp.value = ''; ui.inp.style.display = 'none'; ui.stat.style.display = 'flex'; }, 200); };
+        ui.inp.onkeydown = (e) => {
+            e.stopPropagation();
+            if(e.key === 'Enter') {
+                const v = parseInt(ui.inp.value);
+                ui.inp.value = '';
+                if(v > 0) startClicker(v, STATE.clicker.mode);
+                ui.inp.blur();
+            }
+        };
+    };
+
+    const toggleInput = (show) => {
+        if(show) {
+            ui.inp.placeholder = STATE.clicker.mode === 'batch' ? '*' : '#';
+            ui.inp.value = ''; ui.stat.style.display = 'none'; ui.inp.style.display = 'block'; setTimeout(() => ui.inp.focus(), 50);
+        } else ui.inp.blur();
+    };
+
+    window.addEventListener('focus', () => { if(!STATE.clicker.active) { STATE.clicker.status = ''; document.title = origTitle; } });
+    document.addEventListener('keydown', (e) => { if(!e.target.closest(SEL.input) && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName) && e.shiftKey && e.key.toLowerCase() === 'u') toggleTheme(); });
+    buildUI();
+})();
