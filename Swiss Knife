@@ -1,0 +1,789 @@
+// ==UserScript==
+// @name         Swiss Knife
+// @namespace    http://tampermonkey.net/
+// @version      1.5
+// @description  Combina funcionalidades: Abrir link com botão direito, esconder cursor, Element Inspector, Abrir links com retângulo, Painel de Ajuda, Stop videos looping e Double-click Image Downloader.
+// @match        *://*/*
+// @grant        GM_addStyle
+// @grant        GM_setClipboard
+// @grant        GM_openInTab
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_info
+// @grant        GM_download
+// @icon         https://raw.githubusercontent.com/MarcusV8/Icons/refs/heads/main/Swiss.png
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    let isCustomBindingsEnabled = true;
+    let isDoubleClickImageDownloaderEnabled = true;
+
+    // ========================================================================
+    // Bloco 1: Funcionalidades de "Custom Bindings"
+    // ========================================================================
+    (function() {
+        document.addEventListener('contextmenu', function(event) {
+            if (!isCustomBindingsEnabled) return;
+            const link = event.target.closest('a');
+            if (link && link.href) {
+                event.preventDefault();
+                window.open(link.href, '_blank');
+            }
+        }, false);
+
+        let hideCursorTimeoutId;
+        const hideCursor = () => {
+            if (!isCustomBindingsEnabled) return;
+            if (document.body) document.body.style.cursor = 'none';
+        };
+        const resetCursor = () => {
+            clearTimeout(hideCursorTimeoutId);
+            if (document.body) {
+                if (document.body.style.cursor === 'none') document.body.style.cursor = '';
+                if (isCustomBindingsEnabled) hideCursorTimeoutId = setTimeout(hideCursor, 3000);
+            }
+        };
+        document.addEventListener('mousemove', resetCursor, { passive: true });
+        resetCursor();
+        window.combinedScript_resetCursor = resetCursor;
+    })();
+
+    // ========================================================================
+    // Bloco 2: Funcionalidade "Abrir Links com Retângulo"
+    // ========================================================================
+    let showStatusMessage;
+    (function() {
+        const RECT_STORAGE_KEY = 'linkRectangleSelectorEnabled';
+        const RECT_MAX_LINKS_NO_CONFIRM = 10;
+        const RECT_IGNORE_PARENT_TAGS = ['nav', 'footer', 'aside', 'header', '.fl', '.uyS0S', '.dM1Yyd, .dEEN8c'];
+        const RECT_TOGGLE_SHORTCUT = { ctrl: true, shift: true, key: '-' };
+
+        let isRectScriptEnabled = GM_getValue(RECT_STORAGE_KEY, true);
+
+        const rectSelectorStyles = `
+            #link-selector-rectangle {
+                position: absolute;
+                border: 1px dashed #4682b4;
+                background-color: rgba(70, 130, 180, 0.15);
+                z-index: 2147483646;
+                pointer-events: none;
+                display: none;
+                box-sizing: border-box;
+            }
+        `;
+        const rectStatusMessageStyles = `
+            #link-selector-status-message {
+                position: fixed !important;
+                bottom: 15px !important;
+                right: 15px !important;
+                background-color: rgba(57, 53, 82, 0.95) !important;
+                color: white !important;
+                padding: 8px 15px !important;
+                border-radius: 8px !important;
+                z-index: 2147483647 !important;
+                font-family: sans-serif !important;
+                font-size: 13px !important;
+                opacity: 0 !important;
+                transition: opacity 0.4s ease-out !important;
+                pointer-events: none !important;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.3) !important;
+            }
+            #link-selector-status-message.visible { opacity: 1 !important; }
+        `;
+        GM_addStyle(rectSelectorStyles + rectStatusMessageStyles);
+
+        let selectionDiv = document.createElement('div');
+        selectionDiv.id = 'link-selector-rectangle';
+        document.body.appendChild(selectionDiv);
+        let statusMessageDiv = null;
+        let statusMessageTimeout = null;
+        let isDrawingRect = false;
+        let rectStartX, rectStartY;
+
+        showStatusMessage = function(message) {
+            if (!statusMessageDiv) {
+                statusMessageDiv = document.createElement('div');
+                statusMessageDiv.id = 'link-selector-status-message';
+                if (document.body) {
+                    document.body.appendChild(statusMessageDiv);
+                } else {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        if (!document.getElementById('link-selector-status-message')) {
+                            document.body.appendChild(statusMessageDiv);
+                        }
+                    });
+                }
+            }
+            if (statusMessageDiv && document.body.contains(statusMessageDiv)) {
+                statusMessageDiv.textContent = message;
+                statusMessageDiv.classList.add('visible');
+                if (statusMessageTimeout) clearTimeout(statusMessageTimeout);
+                statusMessageTimeout = setTimeout(() => {
+                    if (statusMessageDiv) statusMessageDiv.classList.remove('visible');
+                    statusMessageTimeout = null;
+                }, 2500);
+            } else if (statusMessageDiv && !document.body.contains(statusMessageDiv)) {
+                document.body.appendChild(statusMessageDiv);
+                statusMessageDiv.textContent = message;
+                statusMessageDiv.classList.add('visible');
+                if (statusMessageTimeout) clearTimeout(statusMessageTimeout);
+                statusMessageTimeout = setTimeout(() => {
+                    if (statusMessageDiv) statusMessageDiv.classList.remove('visible');
+                    statusMessageTimeout = null;
+                }, 2500);
+            }
+        }
+
+        function toggleRectScriptState() {
+            isRectScriptEnabled = !isRectScriptEnabled;
+            GM_setValue(RECT_STORAGE_KEY, isRectScriptEnabled);
+            const statusText = isRectScriptEnabled ? 'ATIVADO' : 'DESATIVADO';
+            showStatusMessage(`Seleção de Links (Retângulo): ${statusText}`);
+        }
+
+        document.addEventListener('mousedown', (e) => {
+            if (!isRectScriptEnabled) return;
+            const ignoredElements = 'a, button, input, textarea, select, label, [role="button"], [role="link"], [contenteditable="true"], summary, details, .hover-debug-panel, #link-selector-status-message, #swissknife-help-panel';
+            if (e.button !== 0 || e.target.closest(ignoredElements)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            isDrawingRect = true;
+            rectStartX = e.pageX;
+            rectStartY = e.pageY;
+            selectionDiv.style.left = rectStartX + 'px';
+            selectionDiv.style.top = rectStartY + 'px';
+            selectionDiv.style.width = '0px';
+            selectionDiv.style.height = '0px';
+            selectionDiv.style.display = 'block';
+        }, true);
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDrawingRect) return;
+            let currentX = e.pageX;
+            let currentY = e.pageY;
+            let left = Math.min(rectStartX, currentX);
+            let top = Math.min(rectStartY, currentY);
+            let width = Math.abs(currentX - rectStartX);
+            let height = Math.abs(currentY - rectStartY);
+            selectionDiv.style.left = left + 'px';
+            selectionDiv.style.top = top + 'px';
+            selectionDiv.style.width = width + 'px';
+            selectionDiv.style.height = height + 'px';
+        }, true);
+
+        document.addEventListener('mouseup', (e) => {
+            if (!isDrawingRect) return;
+            isDrawingRect = false;
+            selectionDiv.style.display = 'none';
+            const rect = {
+                left: parseInt(selectionDiv.style.left, 10),
+                top: parseInt(selectionDiv.style.top, 10),
+                width: parseInt(selectionDiv.style.width, 10),
+                height: parseInt(selectionDiv.style.height, 10),
+                right: 0,
+                bottom: 0
+            };
+            rect.right = rect.left + rect.width;
+            rect.bottom = rect.top + rect.height;
+            if (rect.width < 10 && rect.height < 10) return;
+
+            const potentialLinks = document.querySelectorAll('a[href^="http"]');
+            const linksToOpen = new Set();
+            const ignoreSelector = RECT_IGNORE_PARENT_TAGS.join(', ');
+
+            potentialLinks.forEach(link => {
+                const linkRect = link.getBoundingClientRect();
+                if (linkRect.width === 0 || linkRect.height === 0 || link.offsetParent === null) return;
+                if (ignoreSelector && link.closest(ignoreSelector)) return;
+                const linkPageRect = {
+                    left: linkRect.left + window.scrollX,
+                    top: linkRect.top + window.scrollY,
+                    right: linkRect.right + window.scrollX,
+                    bottom: linkRect.bottom + window.scrollY
+                };
+                const intersects = (
+                    linkPageRect.left < rect.right &&
+                    linkPageRect.right > rect.left &&
+                    linkPageRect.top < rect.bottom &&
+                    linkPageRect.bottom > rect.top
+                );
+                if (intersects) linksToOpen.add(link.href);
+            });
+
+            if (linksToOpen.size > 0) {
+                let confirmOpen = true;
+                if (linksToOpen.size > RECT_MAX_LINKS_NO_CONFIRM) {
+                    confirmOpen = confirm(`Você selecionou ${linksToOpen.size} links neste retângulo.\n\nDeseja realmente abrir todos em novas abas?`);
+                }
+                if (confirmOpen) {
+                    linksToOpen.forEach(href => {
+                        GM_openInTab(href, { active: false, insert: true });
+                    });
+                }
+            }
+        }, true);
+
+        window.combinedScript_toggleRectScriptState = toggleRectScriptState;
+        window.combinedScript_isRectEnabled = () => isRectScriptEnabled;
+    })();
+
+    // ========================================================================
+    // Bloco 3: Funcionalidade "Element Inspector"
+    // ========================================================================
+    (function() {
+        let inspectorEnabled = false;
+        let inspectorPanel = null;
+        let inspectorCurrentTarget = null;
+
+        const inspectorStyles = `
+            .hover-debug-panel.tampermonkey-element-inspector {
+                all: initial !important;
+                position: fixed !important;
+                top: 10px !important;
+                right: 10px !important;
+                background: rgba(0,0,0,0.8) !important;
+                border: 2px solid #ff0000 !important;
+                color: #fff !important;
+                padding: 10px !important;
+                border-radius: 5px !important;
+                z-index: 2147483647 !important;
+                max-width: 300px !important;
+                font-family: monospace !important;
+                font-size: 12px !important;
+                pointer-events: none !important;
+                display: none !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                line-height: 1.2 !important;
+                text-align: left !important;
+                word-wrap: break-word !important;
+            }
+            .hover-debug-panel.tampermonkey-element-inspector * {
+                all: initial !important;
+                font-family: monospace !important;
+                font-size: 12px !important;
+                color: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                line-height: 1.2 !important;
+                box-sizing: border-box !important;
+                text-align: left !important;
+                background: none !important;
+                border: none !important;
+                word-wrap: normal !important;
+            }
+            .hover-debug-panel.tampermonkey-element-inspector .class-copy {
+                cursor: pointer !important;
+                color: #7fffd4 !important;
+                text-decoration: underline !important;
+                pointer-events: auto !important;
+                display: inline-block !important;
+                margin-top: 5px !important;
+            }
+            .hover-debug-panel.tampermonkey-element-inspector.inspector-active {
+                border-color: #00ff00 !important;
+                display: block !important;
+            }
+            .hover-debug-panel.tampermonkey-element-inspector strong {
+                font-weight: bold !important;
+                margin-right: 5px !important;
+            }
+            .hover-debug-panel.tampermonkey-element-inspector hr {
+                border: none !important;
+                border-top: 1px solid #555 !important;
+                margin: 5px 0 !important;
+                height: 1px !important;
+            }
+        `;
+        GM_addStyle(inspectorStyles);
+
+        function createInspectorPanel() {
+            if (inspectorPanel) return inspectorPanel;
+            inspectorPanel = document.createElement('div');
+            inspectorPanel.className = 'hover-debug-panel tampermonkey-element-inspector';
+            document.body.appendChild(inspectorPanel);
+            return inspectorPanel;
+        }
+
+        function formatElementClasses(classString) {
+            return classString && typeof classString === 'string' && classString.trim() !== '' ?
+                `.${classString.trim().replace(/\s+/g, '.')}` : '';
+        }
+
+        function captureElementStyles(element) {
+            try {
+                if (!(element instanceof Element)) return { backgroundColor: 'N/A', color: 'N/A', border: 'N/A' };
+                const style = window.getComputedStyle(element);
+                return { backgroundColor: style.backgroundColor, color: style.color, border: style.border };
+            } catch (e) {
+                return { backgroundColor: 'error', color: 'error', border: 'error' };
+            }
+        }
+
+        function updateInspectorPanel(target) {
+            if (!inspectorPanel || !target) return;
+            const preHoverStyles = captureElementStyles(target);
+            const tagName = target.tagName ? target.tagName.toLowerCase() : '[não é elemento]';
+            const elementId = target.id ? `#${target.id}` : '';
+            const formattedClasses = formatElementClasses(target.className);
+            const selectorToCopy = `${tagName}${elementId}${formattedClasses}` || tagName;
+            const info = `<strong>Tag:</strong> ${tagName}${elementId ? `<br><strong>ID:</strong> ${elementId}` : ''}${formattedClasses ? `<br><strong>Classes:</strong> ${formattedClasses}` : '<br><strong>Classes:</strong> [Nenhuma]'}<div class="class-copy" title="Copiar seletor (${selectorToCopy})">⎘ Copiar seletor</div><hr><strong>Estilos Computados:</strong><div>BG: ${preHoverStyles.backgroundColor}</div><div>Cor: ${preHoverStyles.color}</div><div>Borda: ${preHoverStyles.border}</div>`;
+            inspectorPanel.innerHTML = info;
+            inspectorPanel.classList.add('inspector-active');
+        }
+
+        function handleInspectorMouseMove(e) {
+            if (!inspectorEnabled) return;
+            const target = e.target;
+            if (!target || target === inspectorCurrentTarget || target.closest('.tampermonkey-element-inspector, #link-selector-status-message, #swissknife-help-panel')) {
+                return;
+            }
+            inspectorCurrentTarget = target;
+            updateInspectorPanel(target);
+        }
+
+        function copyCurrentSelectorToClipboard() {
+            if (inspectorCurrentTarget) {
+                const tagName = inspectorCurrentTarget.tagName ? inspectorCurrentTarget.tagName.toLowerCase() : '';
+                if ((tagName === 'body' || tagName === 'html') && !inspectorCurrentTarget.id && !formatElementClasses(inspectorCurrentTarget.className)) return false;
+                const elementId = inspectorCurrentTarget.id ? `#${inspectorCurrentTarget.id}` : '';
+                const formattedClasses = formatElementClasses(inspectorCurrentTarget.className);
+                const selectorToCopy = `${tagName}${elementId}${formattedClasses}` || tagName;
+                if (selectorToCopy) {
+                    GM_setClipboard(selectorToCopy);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function handleInspectorPanelClick(e) {
+            if (e.target.classList.contains('class-copy')) {
+                if (copyCurrentSelectorToClipboard() && inspectorPanel) {
+                    const copyBtn = e.target;
+                    const originalText = '⎘ Copiar seletor';
+                    copyBtn.textContent = '✓ Copiado!';
+                    setTimeout(() => {
+                        if (copyBtn && copyBtn.textContent === '✓ Copiado!') copyBtn.textContent = originalText;
+                    }, 1500);
+                }
+            }
+        }
+
+        function toggleInspector() {
+            inspectorEnabled = !inspectorEnabled;
+            const statusText = inspectorEnabled ? 'ATIVADO' : 'DESATIVADO';
+            if (typeof showStatusMessage === 'function') {
+                showStatusMessage(`Inspetor de Elementos: ${statusText}`);
+            }
+
+            if (inspectorEnabled) {
+                createInspectorPanel();
+                document.addEventListener('mousemove', handleInspectorMouseMove, true);
+                document.addEventListener('click', handleInspectorPanelClick, true);
+            } else {
+                document.removeEventListener('mousemove', handleInspectorMouseMove, true);
+                document.removeEventListener('click', handleInspectorPanelClick, true);
+                if (inspectorPanel) {
+                    inspectorPanel.innerHTML = '';
+                    inspectorPanel.classList.remove('inspector-active');
+                }
+                inspectorCurrentTarget = null;
+            }
+        }
+
+        window.combinedScript_toggleInspector = toggleInspector;
+        window.combinedScript_isInspectorEnabled = () => inspectorEnabled;
+        window.combinedScript_copyCurrentSelector = copyCurrentSelectorToClipboard;
+        window.combinedScript_getInspectorPanel = () => inspectorPanel;
+    })();
+
+    // ========================================================================
+    // Bloco 4: Funcionalidade "Stop videos looping"
+    // ========================================================================
+    (function() {
+        const hostname = window.location.hostname;
+        if (hostname === 'music.youtube.com' || hostname === 'open.spotify.com') {
+            return;
+        }
+
+        const processedVideos = new WeakSet();
+
+        const init = () => {
+            const vids = document.querySelectorAll("video");
+            vids.forEach((vid) => {
+                if (processedVideos.has(vid)) return;
+                processedVideos.add(vid);
+                vid.removeAttribute("loop");
+                let arr = [];
+
+                const setupTimeout = (extra = 0) => {
+                    let vidLen = vid.duration;
+                    let vidCurr = vid.currentTime;
+
+                    if ((vidLen - vidCurr) * 1000 < 500) return;
+                    if (isNaN(vid.duration) || vid.duration === Infinity) return;
+
+                    if (vidLen > vidCurr) {
+                        const timeout = setTimeout(() => {
+                            vidLen = vid.duration;
+                            vidCurr = vid.currentTime;
+                            const remaining = (vidLen - vidCurr) * 1000;
+                            if (remaining < 500) vid.pause();
+                        }, (vidLen - vidCurr - 0.01) * 1000 + extra);
+                        arr.push(timeout);
+                    }
+                };
+
+                vid.addEventListener('loadedmetadata', () => setupTimeout(-200));
+
+                vid.addEventListener('seeked', () => {
+                    clearAll(arr);
+                    setupTimeout();
+                });
+
+                vid.addEventListener("pause", () => {
+                    clearAll(arr);
+                });
+
+                vid.addEventListener("play", () => {
+                    setupTimeout();
+                });
+
+                vid.addEventListener("ended", () => {
+                    setTimeout(() => vid.pause(), 10);
+                });
+            });
+        };
+        const clearAll = (arr) => {
+            arr.forEach((timeout) => {
+                clearTimeout(timeout);
+            });
+            arr.length = 0;
+        };
+        const observer = new MutationObserver(init);
+        observer.observe(document.body, { childList: true, subtree: true });
+        init();
+    })();
+
+    // ========================================================================
+    // Bloco 5: Funcionalidade "Double-click Image Downloader"
+    // ========================================================================
+    (function() {
+        function filterFilename(name) {
+            return /^.+\.(?:jpe?g|png|gif|webp|avif)$/iu.exec(name)?.[0];
+        }
+
+        function readFilename(url) {
+            const pathname = url.pathname;
+            const leaf = pathname.slice(pathname.lastIndexOf('/') + 1);
+            return filterFilename(leaf);
+        }
+
+        async function onDoubleClick(dblClick) {
+            if (!isDoubleClickImageDownloaderEnabled) return;
+            if (dblClick.target.nodeName === 'IMG') {
+                const imageElement = dblClick.target;
+                if (!imageElement.src || imageElement.src.startsWith('data:')) {
+                    console.log('[ImageDownloader Generic] Imagem sem URL válida ou é base64');
+                    return;
+                }
+                const imageUrl = new URL(imageElement.src, window.location.origin);
+                let filename = readFilename(imageUrl);
+                if (!filename) {
+                    const parts = imageUrl.pathname.split('/');
+                    let defaultName = parts.at(-1) || 'image';
+                    let extension = 'jpg';
+                    if (imageUrl.pathname.includes('.webp')) extension = 'webp';
+                    else if (imageUrl.pathname.includes('.png')) extension = 'png';
+                    else if (imageUrl.pathname.includes('.gif')) extension = 'gif';
+                    else if (imageUrl.pathname.includes('.avif')) extension = 'avif';
+                    if (!defaultName.includes('.')) defaultName += '.' + extension;
+                    filename = filterFilename(defaultName) || 'image.' + extension;
+                }
+                GM_download({
+                    url: imageUrl.href,
+                    name: filename
+                });
+            }
+        }
+
+        function initialize() {
+            console.log('[ImageDownloader Generic] Inicializado!');
+            document.body.addEventListener('dblclick', onDoubleClick);
+        }
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize);
+        else initialize();
+    })();
+
+    // ========================================================================
+    // Bloco 6: Painel de Ajuda de Atalhos
+    // ========================================================================
+    (function() {
+        let isHelpPanelVisible = false;
+        let helpPanelElement = null;
+        const HELP_PANEL_ID = 'swissknife-help-panel';
+
+        const helpPanelCSS = `
+            #${HELP_PANEL_ID} {
+                position: fixed !important;
+                display: none !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+                background-color: #393552 !important;
+                color: #E0DEF4 !important;
+                border: 1px solid #6a648e !important;
+                border-radius: 8px !important;
+                padding: 25px 30px !important;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5) !important;
+                z-index: 2147483647 !important;
+                font-family: sans-serif !important;
+                font-size: 14px !important;
+                line-height: 1.6 !important;
+                max-width: 600px !important;
+                width: 90% !important;
+                box-sizing: border-box !important;
+            }
+            #${HELP_PANEL_ID}.visible { display: block !important; }
+            #${HELP_PANEL_ID} h2 {
+                font-family: inherit !important;
+                font-size: 18px !important;
+                color: #FFFFFF !important;
+                margin: 0 0 10px 0 !important;
+                padding: 0 0 15px 0 !important;
+                border: none !important;
+                border-bottom: 1px solid #6a648e !important;
+                font-weight: bold !important;
+                text-align: center !important;
+                line-height: inherit !important;
+                background: none !important;
+            }
+            #${HELP_PANEL_ID} ul {
+                list-style: none !important;
+                padding: 0 !important;
+                font-family: inherit !important;
+                color: inherit !important;
+                margin: 30px 0 30px 0 !important;
+                border: none !important;
+                background: none !important;
+            }
+            #${HELP_PANEL_ID} li {
+                font-family: inherit !important;
+                color: inherit !important;
+                margin: 0 0 10px 0 !important;
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                border: none !important;
+                border-bottom: 1px dashed #6a648e !important;
+                padding: 0 0 10px 0 !important;
+                flex-wrap: nowrap !important;
+                background: none !important;
+                line-height: inherit !important;
+            }
+            #${HELP_PANEL_ID} li:last-child {
+                border-bottom: none !important;
+                margin-bottom: 0 !important;
+                padding-bottom: 0 !important;
+            }
+            #${HELP_PANEL_ID} .shortcut-keys {
+                display: inline-block !important;
+                white-space: nowrap !important;
+            }
+            #${HELP_PANEL_ID} kbd {
+                font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace !important;
+                background-color: #504a74 !important;
+                color: #FFFFFF !important;
+                border: 1px solid #6e6891 !important;
+                border-radius: 3px !important;
+                padding: 2px 5px !important;
+                margin: 0 2px !important;
+                font-size: 13px !important;
+                box-shadow: 1px 1px 1px rgba(0,0,0,0.3) !important;
+                white-space: nowrap !important;
+                display: inline-block !important;
+                vertical-align: middle;
+                line-height: 1 !important;
+            }
+            #${HELP_PANEL_ID} .shortcut-desc {
+                text-align: right !important;
+                padding-left: 15px !important;
+                font-size: 13px !important;
+                white-space: nowrap !important;
+                flex-shrink: 0;
+            }
+            #${HELP_PANEL_ID} .close-instruction {
+                font-family: inherit !important;
+                margin: 15px 0 0 0 !important;
+                padding: 15px 0 0 0 !important;
+                border: none !important;
+                border-top: 1px solid #6a648e !important;
+                text-align: center !important;
+                font-size: 12px !important;
+                color: #a9a5d1 !important;
+                line-height: inherit !important;
+                background: none !important;
+            }
+            #${HELP_PANEL_ID} .close-instruction kbd {
+                font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace !important;
+                background-color: #504a74 !important;
+                color: #FFFFFF !important;
+                border: 1px solid #6e6891 !important;
+                border-radius: 3px !important;
+                padding: 1px 4px !important;
+                margin: 0 2px !important;
+                font-size: 11px !important;
+                box-shadow: 1px 1px 1px rgba(0,0,0,0.3) !important;
+                white-space: nowrap !important;
+                display: inline-block !important;
+                vertical-align: middle;
+                line-height: 1 !important;
+            }
+        `;
+        GM_addStyle(helpPanelCSS);
+
+        function createHelpPanelHTML() {
+            const rectStatus = typeof window.combinedScript_isRectEnabled === 'function' && window.combinedScript_isRectEnabled() ? 'ATIVADO' : 'DESATIVADO';
+            const inspectorStatus = typeof window.combinedScript_isInspectorEnabled === 'function' && window.combinedScript_isInspectorEnabled() ? 'ATIVO' : 'INATIVO';
+            const customBindingsStatus = isCustomBindingsEnabled ? 'ATIVADO' : 'DESATIVADO';
+            const doubleClickImageStatus = isDoubleClickImageDownloaderEnabled ? 'ATIVADO' : 'DESATIVADO';
+
+            return `
+                <h2>Atalhos - Swiss Knife Script</h2>
+                <ul>
+                    <li><span class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>*</kbd></span><span class="shortcut-desc">Ativar/Desativar Inspetor de Elementos (Atual: ${inspectorStatus})</span></li>
+                    <li><span class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>U</kbd></span><span class="shortcut-desc">Copiar Seletor CSS (Inspetor deve estar ativo)</span></li>
+                    <li><span class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>-</kbd></span><span class="shortcut-desc">Alternar Seleção por Retângulo (Atual: ${rectStatus})</span></li>
+                    <li><span class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>/</kbd></span><span class="shortcut-desc">Alternar Custom Bindings (Atual: ${customBindingsStatus})</span></li>
+                    <li><span class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>+</kbd></span><span class="shortcut-desc">Alternar Double-click Image Downloader (Atual: ${doubleClickImageStatus})</span></li>
+                    <li><span class="shortcut-keys"><kbd>Botão Direito</kbd></span><span class="shortcut-desc">(Sobre um link) Abrir em Nova Aba</span></li>
+                    <li><span class="shortcut-keys"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Enter</kbd></span><span class="shortcut-desc">Mostrar/Esconder este Painel de Ajuda</span></li>
+                    <li><span class="shortcut-keys"><kbd>Qualquer Tecla</kbd></span><span class="shortcut-desc">Mostrar Cursor (se oculto)</span></li>
+                </ul>
+                <p class="close-instruction">Pressione <kbd>Esc</kbd> ou <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> para fechar.</p>
+            `;
+        }
+
+        function ensureHelpPanelElement() {
+            if (!helpPanelElement || !document.body.contains(helpPanelElement)) {
+                helpPanelElement = document.getElementById(HELP_PANEL_ID);
+                if (!helpPanelElement) {
+                    helpPanelElement = document.createElement('div');
+                    helpPanelElement.id = HELP_PANEL_ID;
+                    if (document.body) {
+                        document.body.appendChild(helpPanelElement);
+                    } else {
+                        document.addEventListener('DOMContentLoaded', () => {
+                            if (!document.getElementById(HELP_PANEL_ID)) {
+                                document.body.appendChild(helpPanelElement);
+                            }
+                        });
+                    }
+                }
+            }
+            if (helpPanelElement) {
+                helpPanelElement.innerHTML = createHelpPanelHTML();
+            }
+        }
+
+        function toggleHelpPanel() {
+            ensureHelpPanelElement();
+            if (!helpPanelElement) return;
+
+            isHelpPanelVisible = !isHelpPanelVisible;
+            if (isHelpPanelVisible) {
+                helpPanelElement.classList.add('visible');
+            } else {
+                helpPanelElement.classList.remove('visible');
+            }
+        }
+        window.combinedScript_toggleHelpPanel = toggleHelpPanel;
+        window.combinedScript_isHelpPanelVisible = () => isHelpPanelVisible;
+    })();
+
+    // ========================================================================
+    // Bloco Geral: Listener de Teclado Unificado
+    // ========================================================================
+    window.addEventListener('keydown', (e) => {
+        let shortcutProcessed = false;
+
+        if (e.ctrlKey && e.shiftKey && e.key === 'Enter') {
+            if (typeof window.combinedScript_toggleHelpPanel === 'function') {
+                e.preventDefault();
+                window.combinedScript_toggleHelpPanel();
+                shortcutProcessed = true;
+            }
+        } else if (e.key === 'Escape') {
+            if (typeof window.combinedScript_isHelpPanelVisible === 'function' && window.combinedScript_isHelpPanelVisible() && typeof window.combinedScript_toggleHelpPanel === 'function') {
+                e.preventDefault();
+                window.combinedScript_toggleHelpPanel();
+                shortcutProcessed = true;
+            }
+        } else if (e.ctrlKey && e.shiftKey && e.key === '*') {
+            if (typeof window.combinedScript_toggleInspector === 'function') {
+                e.preventDefault();
+                window.combinedScript_toggleInspector();
+                shortcutProcessed = true;
+            }
+        } else if (e.ctrlKey && e.shiftKey && e.key === 'U') {
+            if (typeof window.combinedScript_isInspectorEnabled === 'function' && window.combinedScript_isInspectorEnabled() && typeof window.combinedScript_copyCurrentSelector === 'function') {
+                e.preventDefault();
+                if (window.combinedScript_copyCurrentSelector()) {
+                    const inspectorPanel = typeof window.combinedScript_getInspectorPanel === 'function' ? window.combinedScript_getInspectorPanel() : null;
+                    if (inspectorPanel) {
+                        const copyBtn = inspectorPanel.querySelector('.class-copy');
+                        if (copyBtn && !copyBtn.textContent.includes('✓')) {
+                            const originalText = copyBtn.textContent;
+                            const originalTitle = copyBtn.title;
+                            copyBtn.textContent = '✓ Copiado!';
+                            copyBtn.title = 'Seletor copiado!';
+                            setTimeout(() => {
+                                if (copyBtn && copyBtn.textContent === '✓ Copiado!') {
+                                    copyBtn.textContent = originalText;
+                                    copyBtn.title = originalTitle;
+                                }
+                            }, 1500);
+                        }
+                    }
+                    if (typeof showStatusMessage === 'function') {
+                        showStatusMessage('Seletor CSS copiado!');
+                    }
+                } else {
+                    if (typeof showStatusMessage === 'function') {
+                        showStatusMessage('Não foi possível copiar o seletor.');
+                    }
+                }
+                shortcutProcessed = true;
+            }
+        } else if (e.ctrlKey && e.shiftKey && e.key === '-') {
+            if (typeof window.combinedScript_toggleRectScriptState === 'function') {
+                e.preventDefault();
+                window.combinedScript_toggleRectScriptState();
+                shortcutProcessed = true;
+            }
+        } else if (e.ctrlKey && e.shiftKey && e.key === '/') {
+            isCustomBindingsEnabled = !isCustomBindingsEnabled;
+            const statusText = isCustomBindingsEnabled ? 'ATIVADO' : 'DESATIVADO';
+            if (typeof showStatusMessage === 'function') {
+                showStatusMessage(`Custom Bindings: ${statusText}`);
+            }
+            e.preventDefault();
+            shortcutProcessed = true;
+        } else if (e.ctrlKey && e.shiftKey && e.key === '+') {
+            isDoubleClickImageDownloaderEnabled = !isDoubleClickImageDownloaderEnabled;
+            const statusText = isDoubleClickImageDownloaderEnabled ? 'ATIVADO' : 'DESATIVADO';
+            if (typeof showStatusMessage === 'function') {
+                showStatusMessage(`Double-click Image Downloader: ${statusText}`);
+            }
+            e.preventDefault();
+            shortcutProcessed = true;
+        }
+        if (!shortcutProcessed && typeof window.combinedScript_resetCursor === 'function') {
+            window.combinedScript_resetCursor();
+        }
+    }, true);
+})();
