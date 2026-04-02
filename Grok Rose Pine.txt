@@ -1,29 +1,406 @@
-@-moz-document domain("grok.com") {
-          /* Grok */
-      :root {
-          --C1: #191724;
-          --C2: #232136;
-          --C3: #393552;
-          --C4: #E0DEF4;
-          --B1: 1px solid var(--C4);
-          --BR1: 15px;
-          --BR2: 5px;
-     }
-          /* Home */
-          body, .bg-gradient-to-b, .bg-surface-base,
-          .flex.items-center.gap-\[2px\].w-max.rounded-lg.text-xs.bg-background.pb-2.px-2.end-4.-mr-2, .flex.items-center.gap-\[2px\].w-max.rounded-lg.text-xs.bg-background.pb-2.px-2.start-0.md\:start-3.-ml-4 {
-         background: var(--C2) !important;      
-     }
-          /* Buttons */
-       .py-2:not([role="menuitem"]), [aria-label="Anexar"], .dark\:bg-gray-600:is(.dark *), .shadow-none, .p-3, .bg-foreground,
-       .border.border-border-l2.px-3.py-1.rounded-full.text-sm.text-secondary.flex.flex-row.items-center.gap-1.ml-2.mt-0\.5{
-          background: var(--C1) !important;  
+// ==UserScript==
+// @name         Grok Enhancer
+// @namespace    http://tampermonkey.net/
+// @version      2.7
+// @description  Shift+S: Seleção. Shift+U: Tema. Shift+Z: Esconder/Bloquear Chatbox. Inicie o lote pela UI.
+// @author       You/Gemini
+// @match        *://*.grok.com/*
+// @run-at       document-end
+// @icon         https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTCHJ9ej43lZi3G_S4cNWGfgKgjRUPQb3twYw&s
+// ==/UserScript==
+
+setTimeout(function() {
+    console.log("Grok Enhancer Iniciado");
+
+    (function() {
+        'use strict';
+
+        const THEME_CSS = `:root{--C1: #191724 !important; --C2: #232136 !important; --C3: #393552 !important; --C4: #E0DEF4 !important; --B1: 1px solid var(--C4) !important; --BR1: 15px !important; --BR2: 5px !important;} *{color: var(--C4) !important;} body, .bg-gradient-to-b, .bg-surface-base, .flex.items-center.gap-\\[2px\\].w-max.rounded-lg.text-xs.bg-background.pb-2.px-2.end-4.-mr-2, .flex.items-center.gap-\\[2px\\].w-max.rounded-lg.text-xs.bg-background.pb-2.px-2.start-0.md\\:start-3.-ml-4{background: var(--C2) !important;} .py-2:not([role="menuitem"]), [aria-label="Anexar"], .dark\\:bg-gray-600:is(.dark *), .shadow-none, .bg-foreground, .border.border-border-l2.px-3.py-1.rounded-full.text-sm.text-secondary.flex.flex-row.items-center.gap-1.ml-2.mt-0\\.5, #model-select-trigger, .bg-button-filled{background: var(--C1) !important;} .dark\\:data-\\[state\\=checked\\]\\:bg-ivory[data-state="checked"]:is(.dark *){background: var(--C4) !important;} .bg-surface-l2, .bg-surface-l4, .dark\\:bg-purple-1000:is(.dark *), .bg-background:not([style*="bottom: 128px;"]), [data-sidebar="sidebar"], [data-state="open"], .ring-border-l1, .flex.flex-row.border.border-border-l2.rounded-full.p-1.h-13.bg-surface-l1{background: var(--C3) !important;}`;
+        const THEME_STORAGE_KEY = 'grok-theme-enabled-u';
+        const THEME_STYLE_ID = 'grok-dynamic-theme-styler';
+
+        const createThemeStyleElement = (id, css) => {
+            let element = document.getElementById(id);
+            if (element) {
+                element.textContent = css;
+                return;
+            }
+            element = document.createElement('style');
+            element.id = id;
+            element.type = 'text/css';
+            element.textContent = css;
+            (document.head || document.documentElement).appendChild(element);
+        };
+
+        const updateThemeStyles = () => {
+            const isEnabled = localStorage.getItem(THEME_STORAGE_KEY) === 'true';
+            createThemeStyleElement(THEME_STYLE_ID, isEnabled ? THEME_CSS : '');
+        };
+
+        const toggleTheme = () => {
+            const currentState = localStorage.getItem(THEME_STORAGE_KEY) === 'true';
+            localStorage.setItem(THEME_STORAGE_KEY, (!currentState).toString());
+            updateThemeStyles();
+        };
+
+        const MAKE_VIDEO_BUTTON_SELECTOR = 'button[aria-label="Fazer vídeo"]';
+        const ITEM_CONTAINER_SELECTOR = 'div[role="listitem"]';
+        const MAIN_LIST_SELECTOR = 'div[role="list"]';
+        const CHATBOX_SELECTOR = '.query-bar';
+        const CHATBOX_INPUT_SELECTOR = '[contenteditable="true"]';
+
+        let observer = null;
+        let isAutomationRunning = false;
+        let maxRetriesForSession = 0;
+        let debounceTimeout = null;
+        const originalTitle = document.title;
+
+        let selectionMode = 'none';
+        let notification = null;
+
+        const controlWrapper = document.createElement('div');
+        const statusIndicatorBG = document.createElement('div');
+        const statusText = document.createElement('div');
+        const retryInput = document.createElement('input');
+
+        const toggleChatbox = () => {
+            const chatbox = document.querySelector(CHATBOX_SELECTOR);
+            if (!chatbox) return;
+
+            const inputElement = chatbox.querySelector(CHATBOX_INPUT_SELECTOR);
+            const isHiding = !chatbox.classList.contains('grok-chatbox-hidden');
+
+            chatbox.classList.toggle('grok-chatbox-hidden');
+
+            if (isHiding) {
+                if (inputElement) {
+                    inputElement.contentEditable = 'false';
+                    if (document.activeElement === inputElement) {
+                        document.documentElement.focus();
+                    }
+                }
+            } else {
+                if (inputElement) {
+                    inputElement.contentEditable = 'true';
+                }
+            }
+        };
+
+        function createSelectionUI() {
+            notification = document.createElement('div');
+            notification.id = 'grok-selection-notification';
+            document.body.appendChild(notification);
         }
-        .dark\:data-\[state\=checked\]\:bg-ivory[data-state="checked"]:is(.dark *) {
-          background: var(--C4) !important;            
+
+        function showNotification(message, duration = 0) {
+            if (!notification) return;
+            notification.textContent = message;
+            notification.style.display = 'block';
+            if (duration > 0) {
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, duration);
+            }
         }
-        /* Submenu and Input */
-        .bg-surface-l2, .bg-surface-l4, .dark\:bg-purple-1000:is(.dark *), .bg-background:not([style="bottom: 128px;"]) {
-          background: var(--C3) !important;
+
+        function setSelectionMode(mode) {
+            selectionMode = mode;
+            document.body.classList.remove('grok-click-mode');
+
+            if (mode === 'click') {
+                document.body.classList.add('grok-click-mode');
+                const count = document.querySelectorAll('.grok-target-selected').length;
+                showNotification(`Modo de Seleção: ${count} marcadas. Clique no botão da UI para iniciar.`);
+            } else {
+                if (notification) notification.style.display = 'none';
+            }
         }
-}
+
+        function handleGlobalKeyDown(e) {
+            if (e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                if (e.key.toUpperCase() === 'Z') {
+                    e.preventDefault();
+                    toggleChatbox();
+                    return;
+                }
+                if (e.key.toUpperCase() === 'S') {
+                    e.preventDefault();
+                    setSelectionMode(selectionMode === 'click' ? 'none' : 'click');
+                    return;
+                }
+                if (e.key.toUpperCase() === 'U') {
+                    e.preventDefault();
+                    toggleTheme();
+                    return;
+                }
+            }
+
+            if (selectionMode !== 'none') {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.grok-target-selected').forEach(el => el.classList.remove('grok-target-selected'));
+                    setSelectionMode('none');
+                    return;
+                }
+            }
+
+            const activeElement = document.activeElement;
+            const isTyping = activeElement && (activeElement.tagName.toLowerCase() === 'input' || activeElement.tagName.toLowerCase() === 'textarea' || activeElement.isContentEditable);
+
+            if (isTyping) {
+                return;
+            }
+        }
+
+        function handleGlobalClick(e) {
+            if (selectionMode !== 'click') return;
+
+            const videoButton = e.target.closest(MAKE_VIDEO_BUTTON_SELECTOR);
+            if (videoButton) {
+                return;
+            }
+
+            const container = e.target.closest(ITEM_CONTAINER_SELECTOR);
+            if (container) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (!container.querySelector(MAKE_VIDEO_BUTTON_SELECTOR)) {
+                    if (!container.classList.contains('grok-target-selected')) {
+                        showNotification('Este item não pode ser selecionado (sem botão de play).', 2000);
+                    }
+                } else {
+                    container.classList.toggle('grok-target-selected');
+                }
+
+                const count = document.querySelectorAll('.grok-target-selected').length;
+                showNotification(`Modo de Seleção: ${count} marcadas. Clique no botão da UI para iniciar.`);
+            }
+        }
+
+        function setupUI() {
+            updateThemeStyles();
+
+            const UI_CSS = `.grok-chatbox-hidden{display: none !important;} #grok-selection-notification{position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: #191724; color: #E0DEF4; padding: 10px 20px; border-radius: 5px; z-index: 10001; font-family: sans-serif; font-size: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); display: none; pointer-events: none;} body.grok-click-mode{cursor: pointer !important;} #controlWrapper{position: fixed; bottom: 0; right: 0; z-index: 9998; padding: 25px; cursor: pointer;} #autoRetryIndicatorBG{position: fixed; bottom: 10px; right: 10px; z-index: 9999; width: 50px; height: 50px; border-radius: 50%; background-color: #393552; box-shadow: 0 4px 8px rgba(0,0,0,0.2); pointer-events: none; transition: background-color 0.3s, transform 0.2s, opacity 0.3s, border 0.3s; opacity: 0; border: 2px solid transparent; box-sizing: border-box;} #statusText{position: fixed; bottom: 10px; right: 10px; z-index: 10000; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-family: sans-serif; font-size: 11px; font-weight: bold; color: #E0DEF4; user-select: none; transition: transform 0.2s; text-align: center;} #controlWrapper:hover #statusText{transform: scale(1.1);} #controlWrapper:hover #autoRetryIndicatorBG, #autoRetryIndicatorBG.active{opacity: 1;} #autoRetryIndicatorBG.active{background-color: #191724;} #autoRetryIndicatorBG.generating{border-color: #E0DEF4;} #retryInput{display: none; position: fixed; bottom: 10px; right: 10px; z-index: 10001; width: 50px; height: 50px; border-radius: 50%; border: 2px solid #908caa; background-color: #232136; color: #E0DEF4; text-align: center; font-size: 14px; font-weight: bold; box-sizing: border-box;} #retryInput::placeholder{color: #908caa;} #retryInput:focus{outline: none; border-color: #c4a7e7;} .grok-target-selected{box-shadow: 0 0 0 3px #c4a7e7, 0 0 15px 0 #c4a7e7; border-radius: 16px; transition: box-shadow 0.3s;} .grok-target-failed{box-shadow: 0 0 0 3px #eb6f92, 0 0 15px 0 #eb6f92; border-radius: 16px; transition: box-shadow 0.3s;}`;
+            createThemeStyleElement('grok-ui-styler', UI_CSS);
+
+            controlWrapper.id = 'controlWrapper';
+            statusIndicatorBG.id = 'autoRetryIndicatorBG';
+            statusText.id = 'statusText';
+            statusText.textContent = 'OFF';
+            retryInput.id = 'retryInput';
+            retryInput.type = 'text';
+            retryInput.placeholder = '#';
+            retryInput.style.display = 'none';
+
+            controlWrapper.appendChild(statusIndicatorBG);
+            controlWrapper.appendChild(statusText);
+            controlWrapper.appendChild(retryInput);
+            document.body.appendChild(controlWrapper);
+
+            createSelectionUI();
+
+            controlWrapper.addEventListener('click', handleControlClick);
+            retryInput.addEventListener('keydown', handleInputEnter);
+            retryInput.addEventListener('blur', hideInput);
+            retryInput.addEventListener('input', () => {
+                retryInput.value = retryInput.value.replace(/[^0-9]/g, '');
+            });
+
+            document.addEventListener('keydown', handleGlobalKeyDown);
+            document.addEventListener('click', handleGlobalClick, true);
+        }
+
+        function resetAutomation(message = 'OFF') {
+            console.log(`[LOG] Automação sendo resetada. Mensagem: ${message}`);
+            hideInput();
+
+            isAutomationRunning = false;
+            setSelectionMode('none');
+
+            if (observer) {
+                observer.disconnect();
+                console.log('[LOG] MutationObserver desconectado.');
+            }
+
+            document.querySelectorAll('.grok-target-selected, .grok-target-failed').forEach(target => {
+                target.classList.remove('grok-target-selected');
+                target.classList.remove('grok-target-failed');
+                delete target.dataset.retryCount;
+            });
+
+            if (message.includes('Falha')) {
+                document.title = `[Falha] ${originalTitle}`;
+                statusIndicatorBG.style.backgroundColor = '#eb6f92';
+                statusText.textContent = 'Falha';
+            } else if (message.includes('Completo')) {
+                document.title = `[Completo] ${originalTitle}`;
+                statusIndicatorBG.style.backgroundColor = '#393552';
+                statusText.textContent = 'Feito';
+            } else {
+                document.title = originalTitle;
+                statusIndicatorBG.style.backgroundColor = '#393552';
+                statusText.textContent = 'OFF';
+            }
+        }
+
+        function performCheck() {
+            if (!isAutomationRunning) return;
+
+            const targets = document.querySelectorAll('.grok-target-selected');
+            let activeTargets = targets.length;
+            statusIndicatorBG.classList.remove('generating');
+
+            for (const target of [...targets]) {
+                const video = target.querySelector('video');
+                const playButton = target.querySelector(MAKE_VIDEO_BUTTON_SELECTOR);
+                const isGenerating = !video && !playButton;
+                let currentRetries = parseInt(target.dataset.retryCount || '0', 10);
+
+                if (video) {
+                    target.classList.remove('grok-target-selected');
+                    activeTargets--;
+                } else if (isGenerating) {
+                    statusIndicatorBG.classList.add('generating');
+                } else if (playButton) {
+                    if (currentRetries >= maxRetriesForSession) {
+                        target.classList.remove('grok-target-selected');
+                        target.classList.add('grok-target-failed');
+                        activeTargets--;
+                    } else {
+                        currentRetries++;
+                        target.dataset.retryCount = currentRetries;
+                        document.title = `[Tentativa ${currentRetries}/${maxRetriesForSession}]`;
+                        playButton.click();
+                        statusIndicatorBG.classList.add('generating');
+                    }
+                }
+            }
+
+            statusText.textContent = `${activeTargets} Ativos`;
+            if (activeTargets === 0 && isAutomationRunning) {
+                resetAutomation('Completo');
+            }
+        }
+
+        function startAutomationProcess() {
+            console.log('[LOG] Iniciando processo de automação...');
+            const mainList = document.querySelector(MAIN_LIST_SELECTOR);
+            if (!mainList) {
+                alert("Erro: Container principal (lista) não encontrado.");
+                resetAutomation();
+                return;
+            }
+
+            const targets = document.querySelectorAll('.grok-target-selected');
+            if (targets.length === 0) {
+                alert("Nenhum alvo selecionado.");
+                resetAutomation();
+                return;
+            }
+
+            console.log(`[LOG] Tentativas máximas definidas para: ${maxRetriesForSession}`);
+            isAutomationRunning = true;
+            setSelectionMode('none');
+            statusIndicatorBG.classList.add('active');
+
+            let initialClicks = 0;
+            targets.forEach(target => {
+                target.dataset.retryCount = 0;
+                const playButton = target.querySelector(MAKE_VIDEO_BUTTON_SELECTOR);
+                if (playButton) {
+                    playButton.click();
+                    initialClicks++;
+                    target.dataset.retryCount = 1;
+                    console.log(`[LOG] Alvo iniciado (Tentativa 1):`, target);
+                }
+            });
+
+            statusText.textContent = `${targets.length} Ativos`;
+            console.log(`[LOG] ${initialClicks} de ${targets.length} alvos iniciados.`);
+
+            observer = new MutationObserver(() => {
+                if (!isAutomationRunning) return;
+                clearTimeout(debounceTimeout);
+                debounceTimeout = setTimeout(performCheck, 500);
+            });
+
+            observer.observe(mainList, {
+                childList: true,
+                subtree: true
+            });
+            console.log('[LOG] MutationObserver está observando a lista principal...');
+        }
+
+        function showInput() {
+            statusText.style.display = 'none';
+            retryInput.style.display = 'flex';
+            statusIndicatorBG.classList.add('active');
+            retryInput.focus();
+        }
+
+        function hideInput() {
+            retryInput.style.display = 'none';
+            retryInput.value = '';
+            statusText.style.display = 'flex';
+
+            const selectedCount = document.querySelectorAll('.grok-target-selected').length;
+            if (!isAutomationRunning && selectedCount === 0) {
+                statusIndicatorBG.classList.remove('active');
+                statusText.textContent = 'OFF';
+            } else if (!isAutomationRunning && selectedCount > 0) {
+                statusIndicatorBG.classList.add('active');
+                statusText.textContent = `${selectedCount} Alvos`;
+            }
+        }
+
+        function handleInputEnter(event) {
+            if (event.key === 'Enter') {
+                const requestedRetries = parseInt(retryInput.value, 10);
+                if (!isNaN(requestedRetries) && requestedRetries > 0) {
+                    console.log(`[LOG] Número de tentativas recebido: ${requestedRetries}`);
+                    maxRetriesForSession = requestedRetries;
+                    hideInput();
+                    startAutomationProcess();
+                } else {
+                    alert("Por favor, insira um número válido maior que zero.");
+                }
+            }
+        }
+
+        function handleControlClick() {
+            const selectedCount = document.querySelectorAll('.grok-target-selected').length;
+
+            if (isAutomationRunning) {
+                resetAutomation();
+            } else if (selectedCount > 0 && document.activeElement !== retryInput) {
+                showInput();
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupUI);
+        } else {
+            setupUI();
+        }
+
+        const themeObserver = new MutationObserver(() => {
+            const themeStyler = document.getElementById(THEME_STYLE_ID);
+            if (!themeStyler || !themeStyler.parentNode) {
+                updateThemeStyles();
+            }
+        });
+
+        setTimeout(() => {
+            const targetNode = document.body || document.documentElement;
+            themeObserver.observe(targetNode, {
+                childList: true,
+                subtree: true
+            });
+            updateThemeStyles();
+        }, 100);
+
+        console.log("Grok Enhancer Finalizado");
+
+    })();
+
+}, 5000);
