@@ -1,0 +1,272 @@
+// ==UserScript==
+// @name         Live CSS Editor
+// @version      1.8
+// @description  Adiciona um editor de CSS flutuante (Ctrl+Shift+[) com captura de seletor (Ctrl+Shift+]).
+// @match        *://*/*
+// @grant        GM_registerMenuCommand
+// @icon         https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSafSYj4W8jDJwo_ZfIrbJTY-y9q2Bt6GkFmA&s
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    const editorId = 'meu-live-editor-container';
+    const styleId = 'meu-live-editor-style-target';
+    const selectionModeClass = 'css-editor-selection-active';
+
+    const defaultCSSTemplate = `:root { --C1: #191724 !important; --C2: #232136 !important; --C3: #393552 !important; --C4: #E0DEF4 !important; --B1: 1px solid var(--C4) !important; --BR1: 15px !important; --BR2: 5px !important; }\n\n`;
+
+    let lastRightClick = { time: 0, target: null };
+    const doubleClickThreshold = 500;
+
+    let isInSelectionMode = false;
+    let lastHighlightedElement = null;
+
+    function toggleEditor() {
+        let editor = document.getElementById(editorId);
+        if (editor) {
+            editor.style.display = (editor.style.display === 'none') ? 'block' : 'none';
+        } else {
+            createEditorInstance();
+        }
+    }
+
+    function createEditorInstance() {
+        const editorCSS = `
+            #${editorId} { position: fixed; top: 20px; right: 20px; width: 300px; min-width: 250px; height: 400px; min-height: 200px; background-color: #282c34; border: 1px solid #61afef; border-radius: 4px; z-index: 99999; display: flex; flex-direction: column; font-family: monospace; box-shadow: 0 5px 15px rgba(0,0,0,0.3); resize: both; overflow: hidden; }
+            #${editorId} .editor-header { background-color: #61afef; color: #282c34; padding: 5px 8px; font-weight: bold; cursor: move; user-select: none; }
+            #${editorId} .editor-textarea { flex-grow: 1; width: 100%; height: 100%; box-sizing: border-box; background-color: #21252b; color: #abb2bf; border: none; padding: 10px; font-size: 14px; resize: none; }
+            #${editorId} .editor-footer { padding: 8px; background-color: #21252b; border-top: 1px solid #61afef; display: flex; justify-content: space-around; }
+            #${editorId} .editor-button { background-color: #61afef; color: #282c34; border: none; border-radius: 3px; padding: 5px 10px; cursor: pointer; }
+            #${editorId} .editor-button:hover { background-color: #c678dd; }
+            body.${selectionModeClass} * { cursor: crosshair !important; }
+        `;
+
+        const editorHTML = `
+            <div class="editor-header">Live CSS Editor (Ctrl+Shift+[)</div>
+            <textarea class="editor-textarea" spellcheck="false"></textarea>
+            <div class="editor-footer">
+                <button class="editor-button" id="editor-btn-copy">Copiar p/ Script</button>
+                <button class="editor-button" id="editor-btn-close">Fechar</button>
+            </div>
+        `;
+
+        const styleElement = document.createElement('style');
+        styleElement.textContent = editorCSS;
+        document.head.appendChild(styleElement);
+
+        const editorContainer = document.createElement('div');
+        editorContainer.id = editorId;
+        editorContainer.innerHTML = editorHTML;
+        document.body.appendChild(editorContainer);
+
+        const textarea = editorContainer.querySelector('.editor-textarea');
+        textarea.value = defaultCSSTemplate;
+
+        const targetStyleTag = getTargetStyleTag();
+        targetStyleTag.textContent = textarea.value;
+
+        addEditorLogic(editorContainer, textarea, targetStyleTag);
+    }
+
+    function getTargetStyleTag() {
+        let styleTag = document.getElementById(styleId);
+        if (!styleTag) {
+            styleTag = document.createElement('style');
+            styleTag.id = styleId;
+            document.head.appendChild(styleTag);
+        }
+        return styleTag;
+    }
+
+    function addEditorLogic(container, textarea, targetStyleTag) {
+        const copyBtn = container.querySelector('#editor-btn-copy');
+        const closeBtn = container.querySelector('#editor-btn-close');
+        const header = container.querySelector('.editor-header');
+
+        textarea.addEventListener('input', () => {
+            targetStyleTag.textContent = textarea.value;
+        });
+
+        copyBtn.addEventListener('click', () => {
+            const cssText = textarea.value;
+            const indentedText = cssText.split('\n')
+                .map(line => '    ' + line)
+                .join('\n');
+            const formattedString = `const THEME_CSS = \`\n${indentedText}\n\`;`;
+
+            navigator.clipboard.writeText(formattedString)
+                .then(() => alert('CSS formatado e copiado!'))
+                .catch(err => console.error('Falha ao copiar:', err));
+        });
+
+        closeBtn.addEventListener('click', () => {
+            toggleEditor();
+        });
+
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        header.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            offsetX = e.clientX - container.getBoundingClientRect().left;
+            offsetY = e.clientY - container.getBoundingClientRect().top;
+            container.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            let newX = e.clientX - offsetX;
+            let newY = e.clientY - offsetY;
+            newX = Math.max(0, Math.min(newX, window.innerWidth - container.offsetWidth));
+            newY = Math.max(0, Math.min(newY, window.innerHeight - container.offsetHeight));
+            container.style.left = newX + 'px';
+            container.style.top = newY + 'px';
+            container.style.right = 'auto';
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            container.style.userSelect = 'auto';
+        });
+    }
+
+    function getSelector(element) {
+        if (element.id) {
+            return '#' + element.id;
+        }
+        if (element.className && typeof element.className === 'string') {
+            const classes = element.className.trim().split(' ').filter(Boolean);
+            if (classes.length > 0) {
+                return '.' + classes.join('.');
+            }
+        }
+        return element.tagName.toLowerCase();
+    }
+
+    function appendSelectorToEditor(selector) {
+        const editor = document.getElementById(editorId);
+        if (!editor) return;
+
+        if (editor.style.display === 'none') {
+            toggleEditor();
+        }
+
+        const textarea = editor.querySelector('.editor-textarea');
+        if (textarea) {
+            const snippet = `\n${selector} {\n    \n}\n`;
+            textarea.value += snippet;
+            textarea.focus();
+            textarea.scrollTop = textarea.scrollHeight;
+
+            const targetStyleTag = getTargetStyleTag();
+            targetStyleTag.textContent = textarea.value;
+        }
+    }
+
+    function handleSelectionMouseMove(event) {
+        const target = event.target;
+        const editor = document.getElementById(editorId);
+
+        if (editor && editor.contains(target)) {
+            if (lastHighlightedElement) {
+                lastHighlightedElement.style.outline = '';
+            }
+            return;
+        }
+
+        if (lastHighlightedElement && lastHighlightedElement !== target) {
+            lastHighlightedElement.style.outline = '';
+        }
+
+        target.style.outline = '2px dashed #61afef';
+        lastHighlightedElement = target;
+    }
+
+    function handleSelectionClick(event) {
+        const target = event.target;
+        const editor = document.getElementById(editorId);
+
+        if (editor && editor.contains(target)) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const selector = getSelector(target);
+        appendSelectorToEditor(selector);
+
+        toggleSelectionMode();
+    }
+
+    function removeHighlight() {
+        if (lastHighlightedElement) {
+            lastHighlightedElement.style.outline = '';
+            lastHighlightedElement = null;
+        }
+    }
+
+    function toggleSelectionMode() {
+        isInSelectionMode = !isInSelectionMode;
+        if (isInSelectionMode) {
+            document.body.classList.add(selectionModeClass);
+            document.addEventListener('mousemove', handleSelectionMouseMove, true);
+            document.addEventListener('click', handleSelectionClick, true);
+        } else {
+            document.body.classList.remove(selectionModeClass);
+            document.removeEventListener('mousemove', handleSelectionMouseMove, true);
+            document.removeEventListener('click', handleSelectionClick, true);
+            removeHighlight();
+        }
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.ctrlKey && event.shiftKey && event.key === '{') {
+            event.preventDefault();
+            toggleEditor();
+        }
+
+        if (event.ctrlKey && event.shiftKey && event.key === '}') {
+            event.preventDefault();
+            toggleSelectionMode();
+        }
+
+        if (event.key === 'Escape' && isInSelectionMode) {
+            event.preventDefault();
+            toggleSelectionMode();
+        }
+    });
+
+    GM_registerMenuCommand('Alternar Editor CSS (Ctrl+Shift+[)', toggleEditor);
+    GM_registerMenuCommand('Modo de Seleção (Ctrl+Shift+])', toggleSelectionMode);
+
+    document.addEventListener('contextmenu', function(event) {
+        const editor = document.getElementById(editorId);
+        if (!editor || editor.style.display === 'none') return;
+        if (editor.contains(event.target)) return;
+        if (isInSelectionMode) {
+            event.preventDefault();
+            return;
+        }
+
+        event.preventDefault();
+        const targetElement = event.target;
+        const currentTime = event.timeStamp;
+        const currentSelector = getSelector(targetElement);
+
+        navigator.clipboard.writeText(currentSelector)
+            .then(() => {})
+            .catch(err => console.error('Falha ao copiar:', err));
+
+        const timeDiff = currentTime - lastRightClick.time;
+
+        if (timeDiff <= doubleClickThreshold && targetElement === lastRightClick.target) {
+            appendSelectorToEditor(currentSelector);
+            lastRightClick = { time: 0, target: null };
+        } else {
+            lastRightClick = { time: currentTime, target: targetElement };
+        }
+    }, true);
+
+})();
