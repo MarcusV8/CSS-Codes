@@ -1,0 +1,1765 @@
+// ==UserScript==
+// @name       Flow Enhancer
+// @namespace  http://tampermonkey.net/
+// @version    227
+// @author     MarcusV8
+// @include    /^https:\/\/labs\.google\/fx\/.*\/flow(\/.*)?$/
+// @include    /^https:\/\/labs\.google\/fx\/.*\/tool(-version)?(\/.*)?$/
+// @include    https://accounts.google.com/*
+// @include    https://labs.google/fx/api/auth/*
+// @include    https://labs.google/
+// @noframes
+// @grant      GM_addStyle
+// @grant      GM_setValue
+// @grant      GM_getValue
+// @run-at     document-start
+// ==/UserScript==
+
+const humanDelay = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
+const logNormalDelay = (median, sigma) => {
+    const u1 = Math.random(), u2 = Math.random();
+    const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    return Math.max(80, Math.round(Math.exp(Math.log(median) + sigma * z)));
+};
+const waitReal = ms => new Promise(r => setTimeout(r, ms));
+const $qs = (sel, root = document) => root.querySelector(sel);
+const $qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+(function () {
+    'use strict';
+    if (window !== window.top) return;
+
+    if (window.location.href.startsWith('https://labs.google/') && !window.location.href.includes('/tools/flow') && !window.location.href.includes('/fx/api/auth') && GM_getValue('flow_cycling', false)) {
+        GM_setValue('flow_cycling', false);
+        window.location.replace('https://labs.google/fx/pt/tools/flow/');
+        return;
+    }
+
+    function isWhiskMode() {
+        return window.location.href.includes('/tool-version/') || !!$qs('input[value*="Whisk"]') || !!$qs('iframe[srcdoc]');
+    }
+
+    if (window.location.href.includes('labs.google')) {
+        (function fixWhiskSandbox() {
+            const _origCreate = document.createElement.bind(document);
+            document.createElement = function (tag, ...rest) {
+                const el = _origCreate(tag, ...rest);
+                if (tag.toLowerCase() !== 'iframe') return el;
+                const _setAttr = el.setAttribute.bind(el);
+                el.setAttribute = function (name, value) {
+                    if (name === 'sandbox') {
+                        const parts = new Set((value || '').split(' ').filter(Boolean));
+                        parts.add('allow-same-origin');
+                        parts.add('allow-forms');
+                        return _setAttr(name, [...parts].join(' '));
+                    }
+                    return _setAttr(name, value);
+                };
+                let _srcdocVal = '';
+                Object.defineProperty(el, 'srcdoc', {
+                    get() { return _srcdocVal; },
+                    set(v) { _srcdocVal = v || ''; el.setAttribute('srcdoc', _srcdocVal); },
+                    configurable: true
+                });
+                return el;
+            };
+        })();
+    }
+
+    if (window.location.href.includes('/flow') || isWhiskMode()) {
+        const injectNet = function () {
+            let activeReqs = 0, roundSucc = 0, roundFail = 0, debounceTimer = null;
+            let _vidActive = false, _vidDebounce = null, _vidSucc = 0, _vidFail = 0;
+            const _sessionLang = (['pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7', 'pt-BR,pt;q=0.9,en;q=0.8', 'en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7', 'pt-BR,pt;q=0.8,en-US;q=0.7,en;q=0.6'])[Math.floor(Math.random() * 4)];
+            const _origFetch = window.fetch;
+            window.fetch = async function (...args) {
+                const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+                const isGenImg = url.includes('batchGenerateImages') || url.includes('generateImage') || url.includes('tool');
+                const isVidStart = url.toLowerCase().includes('generatevideo') || url.toLowerCase().includes('batchasyncgeneratevideotext') || url.toLowerCase().includes('batchasyncgeneratevideoreference');
+                const isVidPoll = url.toLowerCase().includes('videogenerationstatus') || url.toLowerCase().includes('batchcheckasyncvideogeneration');
+                if (isGenImg || isVidStart) {
+                    try {
+                        const init = args[1] || {};
+                        const h = new Headers(init.headers || {});
+                        h.set('Accept-Language', _sessionLang);
+                        args[1] = { ...init, headers: h };
+                    } catch (_) {}
+                }
+                if (isGenImg) { window._flowActiveEngine = 'image'; activeReqs++; }
+                else if (isVidStart) { window._flowActiveEngine = 'video'; if (!_vidActive) { _vidSucc = 0; _vidFail = 0; } _vidActive = true; }
+                else if (isVidPoll) { window._flowActiveEngine = 'video'; }
+                const p = _origFetch.apply(this, args);
+                if (isGenImg) {
+                    const finish = (status, count) => {
+                        activeReqs--;
+                        if (status === 200) roundSucc += count; else if (status >= 400) roundFail++;
+                        if (debounceTimer) clearTimeout(debounceTimer);
+                        debounceTimer = setTimeout(() => {
+                            if (activeReqs <= 0) {
+                                activeReqs = 0;
+                                if (roundSucc > 0 || roundFail > 0) {
+                                    window.dispatchEvent(new CustomEvent('flow_net_round_complete', { detail: { successes: roundSucc, fails: roundFail, type: 'image' } }));
+                                    roundSucc = 0; roundFail = 0;
+                                }
+                            }
+                        }, 2000);
+                    };
+                    p.then(res => {
+                        const clone = res.clone();
+                        clone.json().then(data => {
+                            let count = 1;
+                            if (data?.workflows && Array.isArray(data.workflows)) count = data.workflows.length;
+                            finish(res.status, count);
+                        }).catch(() => finish(res.status, 1));
+                    }).catch(() => finish(500, 0));
+                }
+                if (isVidStart) {
+                    p.then(res => {
+                        if (res.status >= 400) {
+                            const clone2 = res.clone();
+                            clone2.json().then(data => {
+                                const isUnusual = data?.error?.details?.some(d => d.reason === 'PUBLIC_ERROR_UNUSUAL_ACTIVITY') || false;
+                                _vidActive = false; _vidFail++;
+                                if (_vidDebounce) clearTimeout(_vidDebounce);
+                                _vidDebounce = setTimeout(() => {
+                                    window.dispatchEvent(new CustomEvent('flow_net_round_complete', { detail: { successes: 0, fails: _vidFail, type: 'video', unusual: isUnusual } }));
+                                    _vidFail = 0;
+                                }, 1500);
+                            }).catch(() => {
+                                _vidActive = false; _vidFail++;
+                                if (_vidDebounce) clearTimeout(_vidDebounce);
+                                _vidDebounce = setTimeout(() => {
+                                    window.dispatchEvent(new CustomEvent('flow_net_round_complete', { detail: { successes: 0, fails: _vidFail, type: 'video', unusual: false } }));
+                                    _vidFail = 0;
+                                }, 1500);
+                            });
+                        }
+                    }).catch(() => {
+                        _vidActive = false;
+                        window.dispatchEvent(new CustomEvent('flow_net_round_complete', { detail: { successes: 0, fails: 1, type: 'video', unusual: false } }));
+                    });
+                }
+                if (isVidPoll) {
+                    p.then(res => {
+                        const clone = res.clone();
+                        clone.json().then(data => {
+                            let mediaArr = data.media || data.generatedVideo || [];
+                            if (!Array.isArray(mediaArr) && typeof mediaArr === 'object') mediaArr = [mediaArr];
+                            if (!mediaArr?.length) return;
+                            const total = mediaArr.length;
+                            let succeeded = 0, failed = 0, running = 0;
+                            mediaArr.forEach(m => {
+                                const s = m?.mediaMetadata?.mediaStatus?.mediaGenerationStatus || '';
+                                if (!s || s.includes('ACTIVE') || s.includes('PENDING') || s.includes('RUNNING') || s.includes('PROCESSING') || s.includes('QUEUED') || s.includes('SCHEDULED')) running++;
+                                else if (s.includes('FAILED') || s.includes('FILTERED')) failed++;
+                                else if (s.includes('SUCCESSFUL') || s.includes('COMPLETE') || s.includes('DONE')) succeeded++;
+                            });
+                            if (running > 0) window.dispatchEvent(new CustomEvent('flow_net_running'));
+                            if (running > 0 || total === 0) return;
+                            _vidActive = false; _vidSucc += succeeded; _vidFail += failed;
+                            if (_vidDebounce) clearTimeout(_vidDebounce);
+                            _vidDebounce = setTimeout(() => {
+                                if (_vidSucc > 0 || _vidFail > 0) {
+                                    window.dispatchEvent(new CustomEvent('flow_net_round_complete', { detail: { successes: _vidSucc, fails: _vidFail, type: 'video' } }));
+                                    _vidSucc = 0; _vidFail = 0;
+                                }
+                            }, 1000 + Math.floor(Math.random() * 800));
+                        }).catch(() => {});
+                    }).catch(() => {});
+                }
+                return p;
+            };
+        };
+        const s = document.createElement('script');
+        let codeStr = '(' + injectNet.toString() + ')();';
+        if (typeof trustedTypes !== 'undefined' && trustedTypes.createPolicy) {
+            try { codeStr = trustedTypes.createPolicy('flow-enhancer-inj', { createScript: s => s }).createScript(codeStr); } catch (e) {}
+        }
+        s.textContent = codeStr;
+        (document.head || document.documentElement).appendChild(s);
+        s.remove();
+    }
+
+    try {
+        Object.defineProperty(document, 'hidden', { value: false, writable: false });
+        Object.defineProperty(document, 'visibilityState', { value: 'visible', writable: false });
+    } catch (e) {}
+
+    const stopEvt = e => { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); };
+    window.addEventListener('visibilitychange', stopEvt, true);
+    document.addEventListener('visibilitychange', stopEvt, true);
+    window.addEventListener('blur', stopEvt, true);
+
+    const CONFIG = {
+        STABILIZE_DELAY: 0, STUCK_TIMEOUT: 60000, VID_STUCK_TIMEOUT: 180000,
+        FAST_ERR_THRESHOLD: 5000, FAST_ERR_BUFFER_MIN: 2000, FAST_ERR_BUFFER_MAX: 3000,
+        IMG_MIN_INTERVAL: 7000, VID_MIN_INTERVAL: 50000,
+        FSM_COLUMNS: 5, FSM_EDGE: 40, FSM_SCROLL_STEP: 4, FSM_INIT_RETRY_MS: 300, FSM_WAIT_TIMEOUT_MS: 600
+    };
+
+    const CLASS = {
+        CARD_PARENT: 'div[data-tile-id^="fe_id_"]', SUBMIT: 'button[aria-disabled]',
+        ENGINE_BTN: 'div:has(> div > div[data-slate-editor="true"]) button[aria-haspopup="menu"]',
+        OLD_MARKER: 'flow-legacy-card',
+        SPINNER_VID: '.cLiFCS',
+        SPINNER_IMG: '.UIUPO',
+        ERROR: '.llonRc',
+        VID_DONE: 'video[src*="/fx/api/trpc/media.getMediaUrlRedirect"][playsinline]',
+        IMG_DONE: 'img[src*="/fx/api/trpc/media.getMediaUrlRedirect"][alt="Imagem gerada"]',
+        IMG_OPAC: '.gJZyIs', EDITOR: 'div[data-slate-editor="true"]',
+        HISTORY_STEP: 'div[id^="history-step-"]', EDIT_CONTAINER: '#__next > div > div > div:has(div[id^="history-step-"])',
+        THUMB_LOADING: '.UIUPO', ACCOUNT_EMAIL: 'span[class*="AtFeP"]'
+    };
+
+    let state = {
+        running: false, count: 0, max: 0, batch: { active: false, target: 1, current: 0 },
+        ui: null, theme: localStorage.getItem('flowThemeEnabled') === 'true',
+        isLocked: false, savedPrompt: '', savedEditPrompt: '', savedHadAttachment: false,
+        _editSuccessAt: null, trackerTimer: null, _monitoring: false, _loadingStart: null,
+        _clickAfter: 0, _clickCards: null, _acceptUntil: 0, inputMode: 'normal',
+        _sessionTileIds: new Set(), _knownTileIds: new Set(), _lastDeadAt: null, _lastSubmitAt: 0,
+        _networkActive: false, _lastFinishAt: 0, _vidSubmitCount: 0, _unusualStreak: 0,
+        _driftMs: 0, _driftCounter: 0, _driftStep: 5, _whiskLastRoundId: null, _whiskLimboTimer: null,
+        _whiskImgsAnteriores: 0, _whiskKnownThumbCount: 0, _whiskRoundId: null, _finishing: false,
+        _retryInFlight: false, _retryDoneAt: 0,
+        get titlePrefix() { return `[${this.batch.active ? this.batch.current : this.count}/${this.batch.active ? this.batch.target : this.max}]`; }
+    };
+
+    const FSM_STATE = {
+        active: false, layout: null, shadowGrid: null, sentinelObserver: null,
+        mirrorMap: new Map(), mirrorObserver: null, queue: Promise.resolve(),
+        drag: false, retryTimer: null
+    };
+
+    (function patchIO() {
+        const _Orig = window.IntersectionObserver;
+        if (!_Orig) return;
+        window.IntersectionObserver = function (cb, opts) {
+            return new _Orig((entries, obs) => {
+                if (document.hasFocus() || FSM_STATE.active) return cb(entries, obs);
+                cb(entries.map(e => e.isIntersecting ? e : new Proxy(e, {
+                    get(t, p) {
+                        if (p === 'isIntersecting') return true;
+                        if (p === 'intersectionRatio') return 1;
+                        const val = t[p]; return typeof val === 'function' ? val.bind(t) : val;
+                    }
+                })), obs);
+            }, opts);
+        };
+        Object.setPrototypeOf(window.IntersectionObserver, _Orig);
+    })();
+
+    if (window.location.href.includes('accounts.google.com')) {
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') GM_setValue('flow_cycling', false); });
+        const isCycling = GM_getValue('flow_cycling', false), targetEmail = GM_getValue('flow_last_email', '');
+        if (isCycling && targetEmail) {
+            const processList = () => {
+                if (!GM_getValue('flow_cycling', false)) return false;
+                const rawItems = $qsa('ul.Dl08I li');
+                if (!rawItems.length) return false;
+                const validAccounts = rawItems.filter(item => $qs('div.yAlK0b', item));
+                if (!validAccounts.length) return false;
+                let currentIndex = -1;
+                const cleanTarget = targetEmail.toLowerCase().trim();
+                for (let i = 0; i < validAccounts.length; i++) {
+                    const text = $qs('div.yAlK0b', validAccounts[i])?.innerText || validAccounts[i].innerText;
+                    if (text.toLowerCase().includes(cleanTarget)) { currentIndex = i; break; }
+                }
+                const targetItem = validAccounts[(currentIndex !== -1) ? (currentIndex + 1) % validAccounts.length : 0];
+                if (targetItem) {
+                    const clickable = $qs('div[role="link"]', targetItem) || targetItem;
+                    targetItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => {
+                        if (GM_getValue('flow_cycling', false)) {
+                            clickable.focus(); clickable.click();
+                            setTimeout(() => GM_setValue('flow_cycling', false), humanDelay(4000, 7000));
+                        }
+                    }, humanDelay(2000, 4000));
+                    return true;
+                }
+                return false;
+            };
+            const gTimer = setInterval(() => { if (processList()) clearInterval(gTimer); }, humanDelay(1000, 1500));
+            setTimeout(() => clearInterval(gTimer), 20000);
+        }
+    }
+
+    if (window.location.href.includes('labs.google/fx/api/auth') || $qs('.signin')) {
+        const clickTimer = setInterval(() => {
+            const btn = $qs('.signin form button, .signin > div button, form button.button');
+            if (btn) { clearInterval(clickTimer); btn.click(); }
+        }, 500);
+        setTimeout(() => clearInterval(clickTimer), 10000);
+    }
+
+    if (!window.location.href.includes('labs.google')) return;
+
+    window._flowActiveEngine = 'image';
+    let sessionMult = 1, _feCollapsed = true, _feLastHiddenUrl = '', _monitorDbt = null;
+
+    window._sniperLogs = [];
+    window._sniperSessions = 0;
+    window._sniperActive = true;
+    window._sniperTarget = 3;
+
+    state.batch = new Proxy(state.batch, {
+        set(target, prop, value) {
+            if (window._sniperActive && prop === 'current' && target[prop] !== value) {
+                const err = new Error(), caller = err.stack ? err.stack.split('\n')[2]?.trim() : '';
+                const btn = $qs('button[aria-disabled]');
+                window._sniperLogs.push({ hora: new Date().toLocaleTimeString(), sessao: window._sniperSessions + 1, alvo: 'batch.current', incremento: value - target[prop], totalAtual: value, botaoBloqueado: btn ? btn.getAttribute('aria-disabled') === 'true' : false, origem: caller });
+            }
+            target[prop] = value;
+            return true;
+        }
+    });
+
+    state = new Proxy(state, {
+        set(target, prop, value) {
+            if (window._sniperActive) {
+                if (prop === 'count' && target[prop] !== value) {
+                    const err = new Error(), caller = err.stack ? err.stack.split('\n')[2]?.trim() : '';
+                    const btn = $qs('button[aria-disabled]');
+                    window._sniperLogs.push({ hora: new Date().toLocaleTimeString(), sessao: window._sniperSessions + 1, alvo: 'count', incremento: value - target[prop], totalAtual: value, botaoBloqueado: btn ? btn.getAttribute('aria-disabled') === 'true' : false, origem: caller });
+                }
+                if (prop === 'running' && target[prop] === true && value === false) {
+                    window._sniperSessions++;
+                    if (window._sniperSessions >= window._sniperTarget) { window._sniperActive = false; }
+                }
+            }
+            target[prop] = value;
+            return true;
+        }
+    });
+
+    function getWhiskDoc() {
+        try {
+            const iframe = $qs('iframe[srcdoc]');
+            if (!iframe) return null;
+            const doc = iframe.contentDocument || iframe.contentWindow?.document;
+            return (doc && doc.body) ? doc : null;
+        } catch (e) { return null; }
+    }
+
+    function waitForWhiskEl(doc, selector, timeout) {
+        return new Promise(resolve => {
+            const immediate = $qs(selector, doc);
+            if (immediate) return resolve(immediate);
+            let obs, timer;
+            obs = new MutationObserver(() => {
+                const el = $qs(selector, doc);
+                if (el) { obs.disconnect(); clearTimeout(timer); resolve(el); }
+            });
+            obs.observe(doc.body, { childList: true, subtree: true });
+            timer = setTimeout(() => { obs.disconnect(); resolve(null); }, timeout || 6000);
+        });
+    }
+
+    const waitForWhiskInput = (doc, timeout) => waitForWhiskEl(doc, 'input.whisk-prompt-input', timeout);
+    const waitForWhiskBtn = (doc, timeout) => waitForWhiskEl(doc, 'button.w-12.h-12', timeout);
+
+    function getWhiskLayoutMode(iframeDoc) {
+        if (!iframeDoc) return 'none';
+        return $qsa('p', iframeDoc).some(p => p.innerText.trim() === 'VARIANTES') ? 'lateral' : 'normal';
+    }
+
+    const PRESERVE_KEYS = ['FLOW_TILE_GRID_SIZE', 'FLOW_QUICK_SEARCH_MODE', 'flowThemeEnabled'];
+    const _savePreserved = () => { const s = {}; PRESERVE_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v !== null) s[k] = v; }); return s; };
+    const _restorePreserved = saved => Object.entries(saved).forEach(([k, v]) => localStorage.setItem(k, v));
+
+    async function autoClearCache() {
+        const saved = _savePreserved();
+        if ('caches' in window) { const ck = await caches.keys(); await Promise.all(ck.map(k => caches.delete(k))); }
+        (await indexedDB.databases()).forEach(db => indexedDB.deleteDatabase(db.name));
+        localStorage.clear(); sessionStorage.clear();
+        _restorePreserved(saved);
+    }
+
+    function startStorageKeepalive() {
+        if (!window.location.href.includes('labs.google')) return;
+        try {
+            const req = indexedDB.open('_flow_ka', 1);
+            req.onupgradeneeded = e => { try { e.target.result.createObjectStore('_'); } catch (_) {} };
+            req.onsuccess = e => {
+                const scheduleNext = () => setTimeout(() => {
+                    try { e.target.result.transaction(['_'], 'readwrite').objectStore('_').put(Date.now(), 1); } catch (_) {}
+                    scheduleNext();
+                }, Math.floor(Math.random() * 14000) + 7000);
+                scheduleNext();
+            };
+        } catch (e) {}
+        try {
+            if (!navigator.storage?.getDirectory || window._flowOPFSWorker) return;
+            const src = `(async()=>{try{const r=await navigator.storage.getDirectory();const f=await r.getFileHandle('_flow_opfs_ka',{create:true});const h=await f.createSyncAccessHandle();const t=()=>setTimeout(()=>{try{const b=new Uint8Array(8);new DataView(b.buffer).setFloat64(0,Date.now());h.write(b,{at:0});h.flush();}catch(_){}t();},Math.floor(Math.random()*8000)+5000);t();}catch(e){}})();`;
+            const blob = new Blob([src], { type: 'application/javascript' });
+            const rawUrl = URL.createObjectURL(blob);
+            let workerUrl = rawUrl;
+            if (typeof trustedTypes !== 'undefined' && trustedTypes.createPolicy) {
+                try { workerUrl = trustedTypes.createPolicy('flow-enhancer-opfs', { createScriptURL: u => u }).createScriptURL(rawUrl); } catch (e) {}
+            }
+            window._flowOPFSWorker = new Worker(workerUrl);
+        } catch (e) {}
+    }
+
+    let _audioCtx = null;
+    function startAudioKeepAlive() {
+        if (_audioCtx) return;
+        try {
+            _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = _audioCtx.createOscillator(), gain = _audioCtx.createGain();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(1, _audioCtx.currentTime); gain.gain.setValueAtTime(0.001, _audioCtx.currentTime);
+            osc.connect(gain); gain.connect(_audioCtx.destination); osc.start();
+            if (_audioCtx.state === 'suspended') _audioCtx.resume().catch(() => {});
+        } catch (e) {}
+    }
+    function stopAudioKeepAlive() {
+        if (_audioCtx) { try { _audioCtx.close(); } catch (e) {} _audioCtx = null; }
+    }
+    startStorageKeepalive();
+
+    function hasAttachment() {
+        if (isWhiskMode()) {
+            const doc = getWhiskDoc();
+            if (!doc) return false;
+            const containerAssunto = $qs('div.max-w-\\[220px\\]', doc);
+            return !!(containerAssunto && $qs('svg.lucide-check', containerAssunto));
+        }
+        if (isEditMode()) return false;
+        const editor = getEditor();
+        if (!editor) return false;
+        let container = editor;
+        for (let i = 0; i < 6; i++) { if (container.parentElement) container = container.parentElement; }
+        return $qsa('img', container).filter(i => i.src && !i.src.includes('photo.jpg') && !i.src.includes('googleusercontent.com/a/')).length > 0;
+    }
+
+    function getErrorTypes(card) {
+        if (isWhiskMode()) {
+            const doc = getWhiskDoc();
+            if (isGlobalLoading()) return { rate: false, unusual: false, limit: false };
+            const mainToast = $qs('[data-sonner-toast]');
+            const whiskToast = doc && $qs('[data-sonner-toast]', doc);
+            const toast = mainToast || whiskToast;
+            if (!toast) return { rate: false, unusual: false, limit: false };
+            const txt = (toast.textContent || '').toLowerCase();
+            const isRate = txt.includes('muitas requisi') || txt.includes('too many req') || txt.includes('solicitando gera');
+            const isUnusual = txt.includes('violar') || txt.includes('polític') || txt.includes('unusual') || txt.includes('atividade incomum') || (!isRate && toast !== null);
+            return { rate: isRate, unusual: isUnusual, limit: txt.includes('nano banana') };
+        }
+        const nodes = $qsa(CLASS.ERROR, card || document);
+        const txt = nodes.map(n => n.textContent).join(' ').toLowerCase();
+        return {
+            rate: txt.includes('solicitando gerações muito rápido'),
+            unusual: txt.includes('unusual activity') || txt.includes('atividade incomum'),
+            limit: txt.includes('nano banana')
+        };
+    }
+
+    function findReutilizarBtn(card) {
+        if (isWhiskMode()) return null;
+        return $qsa('button', card).find(b => $qs('i', b)?.textContent?.trim() === 'undo') || null;
+    }
+
+    async function reutilizarAndSubmit() {
+        if (isWhiskMode()) { markAllAsOld(); await submitBatchRound(); return; }
+        const activeCards = $qsa(`${CLASS.CARD_PARENT}:not(.${CLASS.OLD_MARKER})`);
+        let btn = null;
+        for (let i = activeCards.length - 1; i >= 0; i--) { btn = findReutilizarBtn(activeCards[i]); if (btn) break; }
+        if (btn) { btn.click(); await waitReal(humanDelay(841, 1327)); }
+        markAllAsOld(); await submitBatchRound();
+    }
+
+    function isGlobalLoading() {
+        if (isWhiskMode()) {
+            const doc = getWhiskDoc();
+            if (!doc) return false;
+            const mode = getWhiskLayoutMode(doc);
+            if (mode === 'lateral') return !!$qs('div.aspect-video.animate-pulse', doc) || !!$qs('.lucide-loader-circle', doc);
+            return !!$qs('div.whisk-shimmer', doc) || !!$qs('img[alt="Whisking..."]', doc);
+        }
+
+        const percentNodes = Array.from(document.querySelectorAll('div, span'));
+        if (percentNodes.some(el => /^\d{1,3}%$/.test(el.textContent.trim()))) return true;
+
+        const isVid = detectEngineFromButton() === 'video';
+        const spinnerClass = isVid ? CLASS.SPINNER_VID : CLASS.SPINNER_IMG;
+        if ($qs(spinnerClass)) return true;
+
+        for (const card of $qsa(`${CLASS.CARD_PARENT}:not(.${CLASS.OLD_MARKER})`)) {
+            const blurEl = $qs('[style*="--blur-amount"]', card);
+            if (blurEl && parseFloat((blurEl.getAttribute('style').match(/--blur-amount:\s*([\d.]+)/) || [])[1] || 0) > 0) return true;
+        }
+
+        return false;
+    }
+
+    function isLoadingCard(card, isVid) {
+        if (!card) return false;
+
+        const percentNodes = Array.from(card.querySelectorAll('div, span'));
+        if (percentNodes.some(el => /^\d{1,3}%$/.test(el.textContent.trim()))) return true;
+
+        const spinnerClass = isVid ? CLASS.SPINNER_VID : CLASS.SPINNER_IMG;
+        if (card.querySelector(spinnerClass)) return true;
+
+        const blurEl = card.querySelector('[style*="--blur-amount"]');
+        if (blurEl) {
+            const style = blurEl.getAttribute('style') || '';
+            const blur = parseFloat((style.match(/--blur-amount:\s*([\d.]+)px/) || [])[1] || '0');
+            const opacity = parseFloat((style.match(/opacity:\s*([\d.]+)/) || [])[1] || '1');
+            if (blur > 0 || opacity === 0) return true;
+        }
+
+        return false;
+    }
+
+    function isEditMode() {
+        if (isWhiskMode()) return false;
+        if ($qs(CLASS.EDIT_CONTAINER)) return true;
+        const step = $qs(CLASS.HISTORY_STEP);
+        return !!step && !!step.closest(CLASS.EDIT_CONTAINER);
+    }
+
+    function getEditor() {
+        if (isEditMode()) {
+            const ec = $qs(CLASS.EDIT_CONTAINER);
+            if (ec) { const ed = $qs(CLASS.EDITOR, ec); if (ed) return ed; }
+        }
+        const eds = $qsa(CLASS.EDITOR);
+        return eds[eds.length - 1];
+    }
+
+    function getSubmitBtn() {
+        if (isWhiskMode()) return null;
+        return $qsa(CLASS.SUBMIT).find(b => $qs('i', b)?.textContent.trim() === 'arrow_forward') || null;
+    }
+
+    function fireReactSubmit(el) {
+        if (!el) return false;
+        const fire = t => {
+            const key = Object.keys(t).find(k => k.startsWith('__reactFiber') || k.startsWith('__reactProps'));
+            if (!key) return false;
+            const p = t.__reactProps$ ? t[key] : (t[key].memoizedProps || t[key].pendingProps);
+            if (p && typeof p.onClick === 'function') {
+                p.onClick({ preventDefault: () => {}, stopPropagation: () => {}, nativeEvent: { isTrusted: true } });
+                return true;
+            }
+            return false;
+        };
+        return fire(el) || (el.firstElementChild ? fire(el.firstElementChild) : false);
+    }
+
+    function hasDone(card) {
+        if (isWhiskMode()) {
+            const doc = getWhiskDoc();
+            if (!doc) return false;
+            const mode = getWhiskLayoutMode(doc);
+            if (mode === 'lateral') {
+                const allThumbs = $qsa('button.w-full.aspect-video', doc);
+                const newThumbs = allThumbs.filter(t => !t.classList.contains('flow-whisk-old'));
+                return newThumbs.length > 0 && allThumbs.length > state._whiskKnownThumbCount;
+            }
+            return $qsa('img[alt="Result"]', doc).length > state._whiskImgsAnteriores;
+        }
+        return !!$qs(detectEngineFromButton() === 'video' ? CLASS.VID_DONE : CLASS.IMG_DONE, card);
+    }
+
+    function getCard(tile, isVid) {
+        if (isWhiskMode()) return document.body;
+        return isVid ? (tile.closest(CLASS.CARD_PARENT) || $qs(CLASS.CARD_PARENT, tile) || tile) : ($qs(CLASS.CARD_PARENT, tile) || tile);
+    }
+
+    async function _countdownLoop(totalMs, label, color, withMouse = false) {
+        state.isLocked = true;
+        let remaining = totalMs;
+        while (remaining > 0) {
+            if (!state.running) break;
+            const step = withMouse ? Math.min(remaining, 500) : Math.min(remaining, humanDelay(910, 1120));
+            document.title = `${state.titlePrefix} ${label} ${Math.ceil(remaining / 1000)}s...`;
+            if (state.ui) { state.ui.text.textContent = `${Math.ceil(remaining / 1000)}s`; state.ui.bg.style.backgroundColor = color; state.ui.bg.classList.add('active'); }
+            if (withMouse) {
+                const x = Math.floor(Math.random() * window.innerWidth), y = Math.floor(Math.random() * window.innerHeight);
+                document.dispatchEvent(new PointerEvent('pointermove', { clientX: x, clientY: y, bubbles: true }));
+                document.dispatchEvent(new MouseEvent('mousemove', { clientX: x, clientY: y, bubbles: true }));
+            }
+            await waitReal(step);
+            remaining -= step;
+        }
+        if (state.ui) state.ui.bg.style.backgroundColor = '';
+        state.isLocked = false;
+    }
+
+    async function handleCooldown(hasRate, hasUnusual) {
+        if (hasUnusual) {
+            state._unusualStreak = (state._unusualStreak || 0) + 1;
+            if (state._unusualStreak >= 3) { state._unusualStreak = 0; autoClearCache(); }
+        } else { state._unusualStreak = 0; }
+        if (hasRate) await _countdownLoop(humanDelay(181, 239) * 1000, 'Aguarde', '#e8a838');
+        else if (hasUnusual) await _countdownLoop(humanDelay(10100, 15700), 'Auto', '#f6c177', true);
+        state._driftCounter = 0; state._driftStep = humanDelay(5, 6);
+    }
+
+    function syntheticScroll() {
+        try {
+            if (isWhiskMode()) return;
+            const el = $qs(CLASS.CARD_PARENT)?.parentElement || document.body;
+            if (Math.random() < 0.22) {
+                (async () => {
+                    const steps = Math.floor(Math.random() * 3) + 2;
+                    for (let i = 0; i < steps; i++) {
+                        const dy = Math.floor(Math.random() * 45) + 8;
+                        el.dispatchEvent(new WheelEvent('wheel', { deltaY: dy, bubbles: true, cancelable: true }));
+                        window.scrollBy(0, dy); await waitReal(humanDelay(160, 410));
+                    }
+                })();
+            } else {
+                const dy = Math.floor(Math.random() * 90) - 45;
+                el.dispatchEvent(new WheelEvent('wheel', { deltaY: dy, bubbles: true, cancelable: true }));
+                window.scrollBy(0, dy);
+            }
+        } catch (e) {}
+    }
+
+    async function runDefibrillator() {
+        if (!document.hasFocus()) {
+            state._needsDefib = true;
+            return;
+        }
+        state._needsDefib = false;
+        const scroller = document.querySelector('[data-testid="virtuoso-scroller"]') || document.querySelector('[data-timeline="true"]')?.parentElement;
+        if (!scroller) return;
+        const max = scroller.scrollHeight - scroller.clientHeight;
+        if (max <= 0) return;
+
+        scroller.scrollTo({ top: max, behavior: 'instant' });
+        await new Promise(r => setTimeout(r, 50));
+        scroller.scrollTo({ top: 0, behavior: 'instant' });
+        await new Promise(r => setTimeout(r, 50));
+
+        await new Promise(r => setTimeout(r, 2000));
+
+        document.querySelectorAll('[data-tile-id]').forEach(card => {
+            const el = card.querySelector('[style*="opacity: 0"]');
+            if (el) {
+                el.style.setProperty('opacity', '1', 'important');
+                el.dispatchEvent(new Event('transitionend', { bubbles: true }));
+            }
+        });
+    }
+
+    window.addEventListener('focus', () => {
+        if (state && state._needsDefib) {
+            runDefibrillator();
+        }
+    });
+
+    async function fakeHoverToBtn(btn) {
+        if (!btn || isWhiskMode()) return;
+        try {
+            const rect = btn.getBoundingClientRect();
+            const destX = rect.left + rect.width * (0.25 + Math.random() * 0.5), destY = rect.top + rect.height * (0.25 + Math.random() * 0.5);
+            const startX = Math.floor(Math.random() * window.innerWidth), startY = Math.floor(Math.random() * window.innerHeight);
+            const cp1x = startX + (destX - startX) * (0.2 + Math.random() * 0.3) + (Math.random() - 0.5) * 130;
+            const cp1y = startY + (destY - startY) * (0.2 + Math.random() * 0.3) + (Math.random() - 0.5) * 130;
+            const cp2x = startX + (destX - startX) * (0.55 + Math.random() * 0.25) + (Math.random() - 0.5) * 90;
+            const cp2y = startY + (destY - startY) * (0.55 + Math.random() * 0.25) + (Math.random() - 0.5) * 90;
+            const steps = Math.floor(Math.random() * 5) + 6, useTouch = Math.random() < 0.15;
+            const pointerType = useTouch ? 'touch' : 'mouse', pressure = useTouch ? (0.4 + Math.random() * 0.4) : 0.5;
+            const contactW = useTouch ? (8 + Math.random() * 12) : 1, contactH = useTouch ? (8 + Math.random() * 12) : 1;
+            for (let i = 1; i <= steps; i++) {
+                const t = i / steps, mt = 1 - t;
+                const x = Math.round(mt*mt*mt*startX + 3*mt*mt*t*cp1x + 3*mt*t*t*cp2x + t*t*t*destX);
+                const y = Math.round(mt*mt*mt*startY + 3*mt*mt*t*cp1y + 3*mt*t*t*cp2y + t*t*t*destY);
+                document.dispatchEvent(new PointerEvent('pointermove', { clientX: x, clientY: y, bubbles: true, pointerType, pressure: pressure*(0.85+Math.random()*0.3), width: contactW, height: contactH }));
+                await waitReal(humanDelay(15, 52));
+            }
+            btn.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, pointerType, pressure, width: contactW, height: contactH }));
+            btn.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true, pointerType, pressure, width: contactW, height: contactH }));
+            await waitReal(humanDelay(35, 85));
+        } catch (e) {}
+    }
+
+    async function doRetry(forceOverride = false) {
+        if (!forceOverride && isGlobalLoading()) { state._monitoring = false; return; }
+        state.isLocked = true;
+        if (state.savedHadAttachment) { await reutilizarAndSubmit(); state.isLocked = false; state._monitoring = false; return; }
+        markAllAsOld();
+        if (isWhiskMode()) {
+            const doc = getWhiskDoc();
+            if (doc && getWhiskLayoutMode(doc) === 'lateral') {
+                const containerDesc = $qs('div.flex-1.flex.flex-col.p-6', doc);
+                if (containerDesc && containerDesc.innerText) state.savedEditPrompt = containerDesc.innerText;
+            }
+        } else {
+            if (isEditMode()) { await anchorToFirstEditStep(); markEditStepsAsOld(); await injectPrompt(state.savedEditPrompt); }
+            else { await injectPrompt(state.savedPrompt); }
+        }
+        await submitBatchRound();
+        state.isLocked = false; state._monitoring = false;
+    }
+
+    function _feApplyTlState() {
+        const tl = $qs('[data-timeline="true"]')?.parentElement;
+        const v = _feCollapsed ? '0' : '', o = _feCollapsed ? 'hidden' : '';
+        if (tl) { tl.style.height = tl.style.minHeight = v; tl.style.overflow = o; }
+        $qsa('.dkNyMO').forEach(b => b.style.display = _feCollapsed ? 'none' : '');
+        const btn = $qs('.fe-tl-btn');
+        if (btn) btn.textContent = _feCollapsed ? '▲' : '▼';
+    }
+
+    async function deleteErrorsSequentially() {
+        if (isWhiskMode()) return;
+        let deletedAny = true;
+        while (deletedAny) {
+            deletedAny = false;
+            const errorEls = $qsa(CLASS.ERROR);
+            if (!errorEls.length) break;
+            for (const errorEl of errorEls) {
+                if (!document.contains(errorEl)) continue;
+                const wrapper = errorEl.closest('[style*="blur-amount"]');
+                const blur = parseFloat(((wrapper?.getAttribute('style') || '').match(/--blur-amount:\s*([\d.]+)px/) || [])[1] || '0');
+                if (blur > 0) continue;
+                const container = errorEl.closest(CLASS.CARD_PARENT) || errorEl.closest(CLASS.HISTORY_STEP) || errorEl.parentElement;
+                if ($qs(`${CLASS.SPINNER}, ${CLASS.THUMB_LOADING}`, container)) continue;
+                const icon = $qsa('i', container).find(i => (i.textContent?.trim() || i.innerText?.trim()) === 'delete_forever');
+                const deleteBtn = icon?.closest('button') || null;
+                if (deleteBtn && document.contains(deleteBtn)) { deleteBtn.click(); deletedAny = true; await waitReal(350); }
+            }
+            if (deletedAny) await waitReal(400);
+        }
+    }
+
+    let BASE_TITLE = 'Flow';
+    function safeUpdateBaseTitle() {
+        const t = document.title || $qs('title')?.textContent || 'Flow';
+        if (!t.match(/\[\d+\/\d+\]/) && !['Sucesso', 'Erro', 'Limite', 'Falha'].some(w => t.includes(w))) BASE_TITLE = t;
+    }
+    safeUpdateBaseTitle();
+
+    async function errorBuffer() {
+        if (Date.now() - (state._lastSubmitAt || 0) < CONFIG.FAST_ERR_THRESHOLD)
+            await waitReal(Math.floor(Math.random() * (CONFIG.FAST_ERR_BUFFER_MAX - CONFIG.FAST_ERR_BUFFER_MIN + 1)) + CONFIG.FAST_ERR_BUFFER_MIN);
+    }
+
+    async function safeWaitBeforeRetry() {
+        const isVid = detectEngineFromButton() === 'video';
+        const remaining = (isVid ? CONFIG.VID_MIN_INTERVAL : CONFIG.IMG_MIN_INTERVAL) - (Date.now() - (state._lastSubmitAt || 0));
+        if (remaining > 0) await waitReal(remaining);
+    }
+
+    function updateBtnUI() {
+        if (state.ui) state.ui.text.textContent = state.titlePrefix.replace('[', '').replace(']', '');
+        if (state.running) document.title = `${state.titlePrefix} ${isEditMode() ? 'Editando' : 'Gerando'}`;
+    }
+
+    function detectEngineFromButton() {
+        if (isWhiskMode()) return 'image';
+        const btn = $qs(CLASS.ENGINE_BTN);
+        return btn && (btn.textContent || '').toLowerCase().match(/v[íi]deo/) ? 'video' : 'image';
+    }
+
+    function getSlateInstance() {
+        if (isWhiskMode()) return null;
+        const editor = getEditor();
+        if (!editor) return null;
+        const fiberKey = Object.keys(editor).find(k => k.startsWith('__reactFiber'));
+        if (!fiberKey) return null;
+        const visited = new Set();
+        function searchFiber(fiber, depth) {
+            if (!fiber || depth > 40 || visited.has(fiber)) return null;
+            visited.add(fiber);
+            let s = fiber.memoizedState;
+            while (s) {
+                const v = s.memoizedState;
+                if (v && typeof v.insertText === 'function' && typeof v.apply === 'function') return v;
+                s = s.next;
+            }
+            return searchFiber(fiber.return, depth + 1) || searchFiber(fiber.child, depth + 1) || searchFiber(fiber.sibling, depth + 1);
+        }
+        return searchFiber(editor[fiberKey], 0);
+    }
+
+    async function injectPrompt(text) {
+        if (!text) return false;
+        if (isWhiskMode()) {
+            const doc = getWhiskDoc();
+            if (!doc) return false;
+            const ed = await waitForWhiskInput(doc, 6000);
+            if (!ed) return false;
+            try {
+                const win = ed.ownerDocument.defaultView;
+                const nativeSetter = Object.getOwnPropertyDescriptor(win.HTMLInputElement.prototype, 'value')?.set;
+                const doInject = async () => {
+                    ed.focus(); await waitReal(humanDelay(40, 80));
+                    if (nativeSetter) {
+                        nativeSetter.call(ed, ''); ed.dispatchEvent(new win.Event('input', { bubbles: true }));
+                        await waitReal(humanDelay(30, 60)); nativeSetter.call(ed, text);
+                    } else { ed.value = text; }
+                    const fk = Object.keys(ed).find(k => k.startsWith('__reactFiber'));
+                    let fiber = fk ? ed[fk] : null, dispatched = false;
+                    while (fiber) {
+                        const props = fiber.memoizedProps || fiber.pendingProps;
+                        if (props?.onChange) { props.onChange({ target: ed, currentTarget: ed, bubbles: true, preventDefault: () => {} }); dispatched = true; break; }
+                        fiber = fiber.return;
+                    }
+                    if (!dispatched) {
+                        ed.dispatchEvent(new win.InputEvent('input', { bubbles: true, data: text, inputType: 'insertText' }));
+                        ed.dispatchEvent(new win.Event('change', { bubbles: true }));
+                    }
+                };
+                await doInject();
+                for (let i = 0; i < 10; i++) {
+                    await waitReal(60);
+                    if (ed.value === text || ed.value === text.trim()) break;
+                    await doInject();
+                }
+                await waitReal(humanDelay(200, 350)); ed.blur(); return true;
+            } catch (e) { return false; }
+        }
+        text = text.replace(/^\n+|\n+$/g, '').replace(/\n{2,}/g, '\n');
+        const ed = getEditor();
+        if (!ed) return false;
+        const slate = getSlateInstance();
+        if (slate) {
+            await waitReal(humanDelay(80, 150));
+            try {
+                const lastBlockIdx = slate.children.length - 1;
+                const lastLeafIdx = (slate.children[lastBlockIdx]?.children?.length || 1) - 1;
+                const lastOffset = slate.children[lastBlockIdx]?.children?.[lastLeafIdx]?.text?.length || 0;
+                slate.apply({ type: 'set_selection', properties: slate.selection, newProperties: { anchor: { path: [0, 0], offset: 0 }, focus: { path: [lastBlockIdx, lastLeafIdx], offset: lastOffset } } });
+                await waitReal(humanDelay(30, 60)); slate.deleteFragment(); await waitReal(humanDelay(50, 80));
+                slate.insertText(text); await waitReal(humanDelay(60, 120)); ed.blur(); await waitReal(humanDelay(80, 150)); return true;
+            } catch (e) {}
+        }
+        try {
+            ed.focus(); await waitReal(humanDelay(50, 90));
+            const sel = window.getSelection(), range = document.createRange();
+            range.selectNodeContents(ed); sel.removeAllRanges(); sel.addRange(range);
+            await waitReal(humanDelay(50, 90));
+            ed.dispatchEvent(new InputEvent('beforeinput', { inputType: 'deleteContentBackward', bubbles: true, cancelable: true }));
+            ed.dispatchEvent(new InputEvent('input', { inputType: 'deleteContentBackward', bubbles: true }));
+            await waitReal(humanDelay(50, 90));
+            ed.dispatchEvent(new InputEvent('beforeinput', { data: text, inputType: 'insertText', bubbles: true, cancelable: true }));
+            ed.dispatchEvent(new InputEvent('input', { data: text, inputType: 'insertText', bubbles: true }));
+            await waitReal(humanDelay(60, 100)); ed.blur(); await waitReal(humanDelay(80, 150)); return true;
+        } catch (e) {}
+        return false;
+    }
+
+    function stopCycle(msg) {
+        runDefibrillator();
+        state.running = false; state.isLocked = false; state._monitoring = false; state._loadingStart = null; state._lastFinishAt = 0;
+        stopAudioKeepAlive();
+        if (state.trackerTimer) { try { state.trackerTimer.terminate ? state.trackerTimer.terminate() : clearInterval(state.trackerTimer); } catch (e) {} }
+
+        let titleStr = BASE_TITLE;
+        let btnText = 'OFF';
+        let btnColor = '';
+
+        if (msg === 'OFF' || msg === 'MANUAL') {
+            titleStr = BASE_TITLE;
+            btnText = 'OFF';
+            btnColor = '';
+        } else if (msg === 'BloqueioModelo') {
+            titleStr = 'Limite';
+            btnText = 'Limite';
+            btnColor = '#f6c177';
+        } else if (msg === 'Falha' || msg === 'Erro') {
+            titleStr = 'Falha';
+            btnText = 'Falha';
+            btnColor = '#eb6f92';
+        } else if (msg === 'Fim!' || msg === 'OK!' || msg === 'Sucesso') {
+            titleStr = 'Sucesso';
+            btnText = 'Sucesso';
+            btnColor = '#81c784';
+        } else {
+            titleStr = msg;
+            btnText = msg;
+            btnColor = '#81c784';
+        }
+
+        document.title = titleStr;
+        if (state.ui) {
+            state.ui.bg.className = ''; 
+            state.ui.text.textContent = btnText;
+            state.ui.bg.style.backgroundColor = btnColor;
+        }
+    }
+
+    function markAllAsOld() {
+        if (isWhiskMode()) {
+            state._loadingStart = null; state._whiskLastRoundId = null; state._whiskRoundId = Math.random().toString(36).substr(2, 9);
+            if (state._whiskLimboTimer) { clearTimeout(state._whiskLimboTimer); state._whiskLimboTimer = null; }
+            const doc = getWhiskDoc();
+            if (doc && getWhiskLayoutMode(doc) === 'lateral') {
+                const allThumbs = $qsa('button.w-full.aspect-video', doc);
+                state._whiskKnownThumbCount = allThumbs.length;
+                allThumbs.forEach(t => t.classList.add('flow-whisk-old'));
+            }
+            return;
+        }
+        const parents = $qsa(CLASS.CARD_PARENT);
+        state._knownTileIds = new Set(parents.map(c => c.getAttribute('data-tile-id')).filter(Boolean));
+        parents.forEach(c => { c.classList.add(CLASS.OLD_MARKER); c.removeAttribute('data-last-retry'); c.removeAttribute('data-error-since'); c.removeAttribute('data-last-loading'); });
+        state._loadingStart = null; state._sessionTileIds = new Set(); state._lastDeadAt = null;
+    }
+
+    function markEditStepsAsOld() { $qsa(CLASS.HISTORY_STEP).forEach(s => s.classList.add('flow-edit-old')); }
+
+    async function anchorToFirstEditStep() {
+        const steps = $qsa(CLASS.HISTORY_STEP);
+        if (steps.length <= 1) return;
+        for (let i = 0; i < steps.length - 1; i++) {
+            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', code: 'ArrowUp', keyCode: 38, bubbles: true, cancelable: true }));
+            await waitReal(humanDelay(80, 160));
+        }
+        await waitReal(humanDelay(200, 400));
+    }
+
+    function getThumbState(t) {
+        if (!t) return 'none';
+        if (isLoadingCard(t) || !!$qs(CLASS.THUMB_LOADING, t)) return 'loading';
+        const errorEl = $qs(CLASS.ERROR, t);
+        if (errorEl) {
+            const wrapper = errorEl.closest('[style*="blur-amount"]');
+            const style = wrapper?.getAttribute('style') || '';
+            const blur = parseFloat((style.match(/--blur-amount:\s*([\d.]+)px/) || [])[1] || '0');
+            const opacity = parseFloat((style.match(/opacity:\s*([\d.]+)/) || [])[1] || '1');
+            return (blur > 0 || opacity === 0) ? 'loading' : 'error';
+        }
+        return $qs(CLASS.IMG_DONE, t) ? 'success' : 'none';
+    }
+
+    async function selected_mode_edit() {
+        await anchorToFirstEditStep(); markEditStepsAsOld(); await injectPrompt(state.savedEditPrompt); await submitBatchRound();
+    }
+
+    async function submitBatchRound() {
+        const isVid = detectEngineFromButton() === 'video';
+        if (isVid) {
+            state._loadingStart = null;
+            state._vidSubmitCount = (state._vidSubmitCount || 0) + 1;
+            if (state._vidSubmitCount > 4 && Math.random() < Math.min(0.9, 0.15 * (state._vidSubmitCount - 4))) {
+                state._vidSubmitCount = Math.floor(state._vidSubmitCount * 0.35);
+                const breakTime = humanDelay(21000, 68000);
+                document.title = `${state.titlePrefix} Pausa ${Math.ceil(breakTime / 1000)}s...`;
+                if (state.ui) { state.ui.text.textContent = '...'; state.ui.bg.style.backgroundColor = '#f6c177'; }
+                await waitReal(breakTime);
+                if (!state.running) return;
+                if (state.ui) state.ui.bg.style.backgroundColor = '';
+            }
+        }
+        await safeWaitBeforeRetry();
+        if (!state.running) return;
+        if (Math.random() < 0.08) { await waitReal(humanDelay(2000, 4000)); if (!state.running) return; }
+        state._driftCounter = (state._driftCounter || 0) + 1;
+        if (state._driftCounter >= (state._driftStep || 5)) {
+            const sign = Math.random() < 0.55 ? 1 : -1;
+            state._driftMs = Math.max(-180, Math.min(850, (state._driftMs || 0) + sign * humanDelay(12, 38)));
+            state._driftCounter = 0; state._driftStep = humanDelay(4, 7);
+        }
+        await waitReal(Math.max(0, Math.round(logNormalDelay(170, 0.55) * sessionMult + (state._driftMs || 0))));
+        if (Math.random() < 0.60) syntheticScroll();
+        if (!state.running) return;
+        if (isWhiskMode()) {
+            const doc = getWhiskDoc();
+            if (doc) {
+                if (getWhiskLayoutMode(doc) === 'lateral') {
+                    const btn = $qsa('button', doc).find(b => b.innerText && b.innerText.includes('GERAR NOVA VARIANTE'));
+                    if (btn) btn.click();
+                } else {
+                    state._whiskImgsAnteriores = $qsa('img[alt="Result"]', doc).length;
+                    const btn = await waitForWhiskBtn(doc, 6000);
+                    if (state.savedPrompt) await injectPrompt(state.savedPrompt);
+                    await waitReal(humanDelay(150, 280));
+                    if (btn) btn.click();
+                }
+                state._loadingStart = Date.now();
+            }
+        } else {
+            if (Math.random() < 0.55) {
+                const ed = getEditor();
+                if (ed) { ed.focus(); await waitReal(humanDelay(90, 240)); ed.blur(); await waitReal(humanDelay(50, 130)); if (!state.running) return; }
+            }
+            const sub = getSubmitBtn();
+            if (sub) { await fakeHoverToBtn(sub); if (!state.running) return; state._acceptUntil = Date.now() + 4000; fireReactSubmit(sub); }
+            else { getEditor()?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true })); }
+        }
+        state._lastSubmitAt = Date.now();
+        if (!isWhiskMode()) { state._sessionTileIds.forEach(id => state._knownTileIds.delete(id)); state._sessionTileIds = new Set(); }
+    }
+
+    async function handleFinish(success, roundId) {
+        if (state._finishing || (isWhiskMode() && roundId && roundId !== state._whiskRoundId)) return;
+        const isVid = detectEngineFromButton() === 'video';
+        if (isVid) success = 1;
+        if (success > 0) { state._lastFinishAt = 0; state._unusualStreak = 0; }
+        if (!isVid && !isWhiskMode() && !state.batch.active && Date.now() - (state._lastFinishAt || 0) < 3000) return;
+        state._lastFinishAt = Date.now(); state._finishing = true; state.isLocked = true;
+        if (isVid) stopAudioKeepAlive();
+        if (state.batch.active) { state.batch.current += Math.min(parseInt(success), state.batch.target - state.batch.current); updateBtnUI(); }
+        await waitReal(isVid ? 0 : CONFIG.STABILIZE_DELAY);
+
+        runDefibrillator();
+
+        if (!state.running) { state._finishing = false; state.isLocked = false; state._lastFinishAt = 0; return; }
+        state._networkActive = false;
+        if (state.batch.active) {
+            if (state.batch.current >= state.batch.target) return stopCycle('Fim!');
+            if (state.max > 0 && ++state.count > state.max) return stopCycle('Falha');
+            await waitReal(humanDelay(400, 900));
+            if (!state.running) { state._finishing = false; state.isLocked = false; state._lastFinishAt = 0; return; }
+            if (!isVid && isEditMode()) { await anchorToFirstEditStep(); markEditStepsAsOld(); await injectPrompt(state.savedEditPrompt); await submitBatchRound(); }
+            else if (state.savedHadAttachment) { await reutilizarAndSubmit(); setTimeout(() => { if (state.running) { state._finishing = false; state.isLocked = false; state._lastFinishAt = 0; } }, 1500); return; }
+            else { markAllAsOld(); if (!isWhiskMode()) await injectPrompt(state.savedPrompt); await submitBatchRound(); }
+            setTimeout(() => { if (state.running) { state._finishing = false; state.isLocked = false; state._lastFinishAt = 0; } }, 1500);
+        } else {
+            state._finishing = false; state.isLocked = false; state._lastFinishAt = 0; stopCycle('OK!');
+        }
+    }
+
+    async function monitorEdit() {
+        if (Array.from(document.querySelectorAll(`${CLASS.HISTORY_STEP}:not(.flow-edit-old) ${CLASS.ERROR}`)).some(n => n.textContent.toLowerCase().includes('nano banana'))) {
+            return stopCycle('BloqueioModelo');
+        }
+        
+        state._monitoring = true;
+        const lastThumb = $qs(`${CLASS.HISTORY_STEP}:not(.flow-edit-old)`);
+        if (!lastThumb || getThumbState(lastThumb) === 'loading') {
+            if (!state._loadingStart) state._loadingStart = Date.now();
+            updateBtnUI(); if (state.ui) state.ui.bg.classList.add('generating');
+            if (Date.now() - state._loadingStart > CONFIG.STUCK_TIMEOUT) { state._loadingStart = null; if (!state.batch.active && state.count >= state.max && state.max > 0) return stopCycle('Falha'); await doRetry(true); }
+            state._monitoring = false; return;
+        }
+        state._loadingStart = null; if (state.ui) state.ui.bg.classList.remove('generating');
+        const thumbState = getThumbState(lastThumb);
+        if (thumbState === 'success') { markEditStepsAsOld(); state._lastSubmitAt = Date.now(); state._unusualStreak = 0; await handleFinish(1); state._monitoring = false; return; }
+        if (thumbState === 'error') {
+            const { rate, unusual, limit } = getErrorTypes(lastThumb);
+            if (limit) return stopCycle('BloqueioModelo');
+            if (state.count >= state.max && state.max > 0) return stopCycle('Falha');
+            await errorBuffer(); if (!state.running) return;
+            await handleCooldown(rate, unusual); if (!state.running) return;
+            if (state.ui) state.ui.bg.style.backgroundColor = '';
+            state.count++; updateBtnUI(); state._monitoring = true;
+            await selected_mode_edit(); state._lastSubmitAt = Date.now();
+            state.isLocked = false; state._monitoring = false; return;
+        }
+        state._monitoring = false;
+    }
+
+    function _countActiveTiles(activeTiles, isVid) {
+        let loadingCount = 0, successCount = 0, cardsToRetry = [], deadCount = 0;
+        const now = Date.now();
+        activeTiles.forEach(tile => {
+            const card = getCard(tile, isVid);
+            if (!card) return deadCount++;
+            if (isLoadingCard(card, isVid)) { 
+                card.setAttribute('data-last-loading', now.toString()); 
+                card.removeAttribute('data-error-since'); 
+                loadingCount++; 
+                return; 
+            }
+            if ((now - parseInt(card.getAttribute('data-last-loading') || '0')) < 2000) { loadingCount++; return; }
+            const isErr = !!$qs(CLASS.ERROR, card), done = hasDone(card) && !isErr, isStuck = card.getAttribute('data-last-retry') === 'stuck';
+            if (done) { card.removeAttribute('data-error-since'); if (!card.getAttribute('data-success-at')) card.setAttribute('data-success-at', now.toString()); successCount++; }
+            else if (isStuck) { deadCount++; }
+            else if (isErr) {
+                const since = card.getAttribute('data-error-since');
+                if (!since) { card.setAttribute('data-error-since', now.toString()); loadingCount++; }
+                else if (now - parseInt(since) < 2000) loadingCount++;
+                else cardsToRetry.push({ card });
+            } else { card.removeAttribute('data-error-since'); loadingCount++; }
+        });
+        return { loadingCount, successCount, cardsToRetry, deadCount };
+    }
+
+    async function monitor() {
+        if (Array.from(document.querySelectorAll(`${CLASS.CARD_PARENT}:not(.${CLASS.OLD_MARKER}) ${CLASS.ERROR}, [data-sonner-toast]`)).some(n => n.textContent.toLowerCase().includes('nano banana'))) {
+            return stopCycle('BloqueioModelo');
+        }
+        
+        state._monitoring = true;
+        const isVid = detectEngineFromButton() === 'video';
+        if (!isVid && isEditMode()) return await monitorEdit();
+
+        if (isWhiskMode()) {
+            const doc = getWhiskDoc();
+            if (!doc) { state._monitoring = false; return; }
+            const mode = getWhiskLayoutMode(doc), loading = isGlobalLoading(), success = hasDone(document.body), currentRoundId = state._whiskRoundId;
+            const hasError = !loading && !success && !!($qs('[data-sonner-toast]') || $qs('[data-sonner-toast]', doc));
+            if (loading) { if (!state._loadingStart) state._loadingStart = Date.now(); if (state._whiskLimboTimer) { clearTimeout(state._whiskLimboTimer); state._whiskLimboTimer = null; } updateBtnUI(); state.ui?.bg.classList.add('generating'); state._monitoring = false; return; }
+            if (success) {
+                state._loadingStart = null; if (state._whiskLimboTimer) { clearTimeout(state._whiskLimboTimer); state._whiskLimboTimer = null; }
+                state.ui?.bg.classList.remove('generating');
+                let qtdSucessos = 1;
+                if (mode === 'lateral') { const allThumbs = $qsa('button.w-full.aspect-video', doc); qtdSucessos = allThumbs.filter(t => !t.classList.contains('flow-whisk-old')).length || 1; }
+                else { const qtdAtual = $qsa('img[alt="Result"]', doc).length; qtdSucessos = (qtdAtual > state._whiskImgsAnteriores) ? (qtdAtual - state._whiskImgsAnteriores) : 1; }
+                await handleFinish(qtdSucessos, currentRoundId); state._monitoring = false; return;
+            }
+            if (hasError) {
+                state._loadingStart = null; if (state._whiskLimboTimer) { clearTimeout(state._whiskLimboTimer); state._whiskLimboTimer = null; }
+                state.ui?.bg.classList.remove('generating');
+                const { rate, unusual, limit } = getErrorTypes(null);
+                if (limit) return stopCycle('BloqueioModelo');
+                if (!state.batch.active && state.count >= state.max && state.max > 0) return stopCycle('Falha');
+                if (!state.batch.active) { state.count++; updateBtnUI(); }
+                await handleCooldown(rate, unusual); await errorBuffer();
+                if (!state.running) { state._monitoring = false; return; }
+                await doRetry(); state._monitoring = false; return;
+            }
+            if (state._loadingStart && !loading && !success && !hasError && !state._whiskLimboTimer) {
+                state._whiskLimboTimer = setTimeout(async () => {
+                    state._whiskLimboTimer = null; if (!state.running) return;
+                    if (!state.batch.active && state.count >= state.max && state.max > 0) return stopCycle('Falha');
+                    if (!state.batch.active) { state.count++; updateBtnUI(); }
+                    await waitReal(5000); if (state.running) await submitBatchRound();
+                }, 10000);
+            }
+            state._monitoring = false; return;
+        }
+
+        if (isGlobalLoading()) {
+            if (!state._loadingStart) state._loadingStart = Date.now();
+            if (Date.now() - state._loadingStart > (isVid ? CONFIG.VID_STUCK_TIMEOUT : CONFIG.STUCK_TIMEOUT)) {
+                state._loadingStart = null;
+                if (!state.batch.active && state.count >= state.max && state.max > 0) return stopCycle('Falha');
+                if (!state.batch.active) { state.count++; updateBtnUI(); }
+                await doRetry(true);
+            } else { updateBtnUI(); state.ui?.bg.classList.add('generating'); }
+            state._monitoring = false; return;
+        }
+
+        if (state._retryInFlight || (state.batch.active && state.batch.current >= state.batch.target)) return;
+
+        $qsa(CLASS.CARD_PARENT).forEach(card => {
+            const isQ = isLoadingCard(card, isVid), isDone = hasDone(card);
+            let id = card.getAttribute('data-tile-id');
+            if (!id) { id = 'flow-id-' + Math.random().toString(36).substr(2, 9); card.setAttribute('data-tile-id', id); }
+            if (isQ) { card.classList.remove(CLASS.OLD_MARKER); state._sessionTileIds.add(id); }
+            else if (isDone || card.classList.contains(CLASS.OLD_MARKER)) { if (state._knownTileIds.has(id)) card.classList.add(CLASS.OLD_MARKER); }
+            else { if (state._knownTileIds.has(id)) card.classList.add(CLASS.OLD_MARKER); else state._sessionTileIds.add(id); }
+        });
+
+        const activeTiles = Array.from(state._sessionTileIds).map(id => $qs(`[data-tile-id="${id}"]`)).filter(Boolean);
+
+        if (!activeTiles.length) {
+            if (isVid) {
+                if (!state._loadingStart) state._loadingStart = Date.now();
+                if (Date.now() - state._loadingStart > CONFIG.VID_STUCK_TIMEOUT) {
+                    if (state._lastSubmitAt && Date.now() - state._lastSubmitAt < CONFIG.VID_STUCK_TIMEOUT) { state._loadingStart = Date.now(); state._monitoring = false; return; }
+                    state._loadingStart = null;
+                    if (!state.batch.active && state.count >= state.max && state.max > 0) return stopCycle('Falha');
+                    if (!state.batch.active) { state.count++; updateBtnUI(); }
+                    await doRetry(true); state._monitoring = false; return;
+                }
+                state.ui?.bg.classList.add('generating');
+            }
+            updateBtnUI(); state._monitoring = false; return;
+        }
+
+        const { loadingCount, successCount, cardsToRetry, deadCount } = _countActiveTiles(activeTiles, isVid);
+
+        if (loadingCount > 0) {
+            if (!state._loadingStart) state._loadingStart = Date.now();
+            if (Date.now() - state._loadingStart > (isVid ? CONFIG.VID_STUCK_TIMEOUT : CONFIG.STUCK_TIMEOUT)) {
+                activeTiles.forEach(t => { const c = getCard(t, isVid); if (c && !hasDone(c) && c.getAttribute('data-last-retry') !== 'stuck') c.setAttribute('data-last-retry', 'stuck'); }); state._loadingStart = null;
+            }
+            updateBtnUI(); state.ui?.bg.classList.add('generating'); state._monitoring = false; return;
+        }
+
+        if (state._loadingStart) { state._loadingStart = null; activeTiles.forEach(t => { const c = getCard(t, isVid); if (c && !hasDone(c) && c.getAttribute('data-last-retry') !== 'stuck') c.removeAttribute('data-last-retry'); }); }
+        state.ui?.bg.classList.remove('generating');
+
+        if (successCount > 0) {
+            activeTiles.forEach(t => { const c = getCard(t, isVid); if (c && hasDone(c)) { const id = c.getAttribute('data-tile-id'); if (id) state._knownTileIds.add(id); } });
+            await handleFinish(successCount); state._monitoring = false; return;
+        }
+
+        if (cardsToRetry.length > 0) {
+            if (state._clickCards) return state._monitoring = false;
+            const _errs = cardsToRetry.map(i => getErrorTypes(i.card));
+            if (_errs.some(e => e.limit)) return stopCycle('BloqueioModelo');
+            if (!state.batch.active && state.count >= state.max && state.max > 0) return stopCycle('Falha');
+            const _hasRate = _errs.some(e => e.rate), _hasUnusual = _errs.some(e => e.unusual);
+            if (!state.batch.active) { state.count++; updateBtnUI(); if (state.max > 0 && state.count > state.max) return stopCycle('Falha'); }
+            await handleCooldown(_hasRate, _hasUnusual);
+            if (!_hasRate && !_hasUnusual) await errorBuffer();
+            if (!state.running) return state._monitoring = false;
+            cardsToRetry.forEach(i => i.card.removeAttribute('data-last-retry'));
+            await doRetry(); return;
+        }
+
+        if (deadCount === activeTiles.length) {
+            const _deadErrs = activeTiles.map(t => getErrorTypes(getCard(t, isVid)));
+            if (_deadErrs.some(e => e.limit)) return stopCycle('BloqueioModelo');
+            const hasRate = _deadErrs.some(e => e.rate), hasUnusual = _deadErrs.some(e => e.unusual);
+            if (!hasUnusual && !hasRate) {
+                if (!state.batch.active && state.count >= state.max && state.max > 0) return stopCycle('Falha');
+                if (!state.batch.active) { state.count++; updateBtnUI(); }
+                activeTiles.forEach(t => { const c = getCard(t, isVid); if (c) { c.removeAttribute('data-last-retry'); c.removeAttribute('data-error-since'); } });
+                state._sessionTileIds = new Set(); await errorBuffer();
+                if (!state.running) { state._monitoring = false; return; }
+                if ($qsa(`${CLASS.CARD_PARENT}:not(.${CLASS.OLD_MARKER})`).some(c => hasDone(c))) { await handleFinish(1); state._monitoring = false; return; }
+                await doRetry(); return;
+            }
+            if (state._lastDeadAt && Date.now() - state._lastDeadAt < 15000) return state._monitoring = false;
+            state._lastDeadAt = Date.now();
+            if (!state.batch.active && state.count >= state.max && state.max > 0) return stopCycle('Falha');
+            if (!state.batch.active) { state.count++; updateBtnUI(); }
+            await handleCooldown(hasRate, hasUnusual);
+            if (!hasRate && !hasUnusual) await errorBuffer();
+            if (!state.running) return state._monitoring = false;
+            await doRetry();
+        }
+
+        state._monitoring = false;
+    }
+
+    window.addEventListener('flow_net_round_complete', async e => {
+        const { successes, fails, type } = e.detail;
+        if (!state.running || state.isLocked) return;
+        if (type === 'video') {
+            state._networkActive = false;
+            if (successes > 0 && !state._finishing) { await handleFinish(successes); return; }
+            if (fails > 0 && !state._finishing && state.running && !state.isLocked) {
+                if (e.detail.unusual) { await handleCooldown(false, true); if (!state.running) return; }
+                if (!state.batch.active) { state.count++; updateBtnUI(); if (state.max > 0 && state.count > state.max) return stopCycle('Falha'); }
+                state._loadingStart = null; await doRetry(true);
+            }
+            return;
+        }
+        if (successes > 0 && !state._finishing) { state._networkActive = true; await handleFinish(successes); return; }
+        if (state._retryInFlight) return;
+        state._networkActive = fails <= 0;
+    });
+
+    window.addEventListener('flow_net_running', () => { if (state.running && state._loadingStart) state._loadingStart = Date.now(); });
+
+    function tickleActiveTiles() {
+        if (!state.running || isWhiskMode() || !state._sessionTileIds?.size) return;
+        const isVid = detectEngineFromButton() === 'video';
+        const tiles = Array.from(state._sessionTileIds).map(id => $qs(`[data-tile-id="${id}"]`)).filter(Boolean);
+        if (!tiles.length) return;
+        tiles.forEach(t => {
+            const card = getCard(t, isVid);
+            if (!card || hasDone(card)) return;
+            $qsa(`${CLASS.IMG_OPAC}, ${CLASS.SPINNER}`, t).forEach(el => { el.dispatchEvent(new Event('transitionend', { bubbles: true })); el.dispatchEvent(new Event('animationend', { bubbles: true })); });
+            $qsa('img[src]:not([src=""])', t).forEach(img => { if (!img.complete || img.naturalWidth === 0) { const s = img.src; img.src = ''; img.src = s; } });
+            $qsa('video', t).forEach(vid => { if (vid.readyState === 0 && !vid.currentSrc) vid.load(); });
+        });
+        const first = tiles.find(t => { const c = getCard(t, isVid); return c && !hasDone(c) && !$qs(CLASS.ERROR, c); });
+        if (first) ['pointermove', 'pointerover', 'pointerenter'].forEach(ev => first.dispatchEvent(new PointerEvent(ev, { bubbles: true, cancelable: true, clientX: 100, clientY: 100 })));
+    }
+
+    let _nextTrickAt = Date.now() + humanDelay(25000, 47000);
+    function trickBrowser() {
+        if (Date.now() < _nextTrickAt) return;
+        _nextTrickAt = Date.now() + humanDelay(25000, 47000);
+        try { window.dispatchEvent(new Event('focus')); window.dispatchEvent(new Event('resize')); if (document.body) { const d = document.createElement('div'); document.body.appendChild(d); document.body.removeChild(d); } } catch (e) {}
+    }
+
+    function triggerMonitor() {
+        if (FSM_STATE.active) return;
+        if (state._clickCards && performance.now() >= state._clickAfter) {
+            state._clickCards = null; state._clickAfter = 0;
+            (async () => { await waitReal(CONFIG.STABILIZE_DELAY); if (!state.running) return; if (state.savedHadAttachment) await reutilizarAndSubmit(); else await doRetry(); })();
+            return;
+        }
+        if (state._retryInFlight && performance.now() >= state._retryDoneAt) { state._retryInFlight = false; state._retryDoneAt = 0; }
+        if (!state._monitoring) monitor();
+    }
+
+    function initEngine() {
+        if (state.trackerTimer) { try { state.trackerTimer.terminate ? state.trackerTimer.terminate() : clearInterval(state.trackerTimer); } catch (e) {} }
+        const workerSrc = `let _t=null;function _s(){_t=setTimeout(()=>{self.postMessage('tick');_s();},950+Math.floor(Math.random()*130));}self.onmessage=e=>{if(e.data==='start'){if(_t)clearTimeout(_t);_s();}else if(e.data==='stop'){if(_t){clearTimeout(_t);_t=null;}}};`;
+        const _wb = new Blob([workerSrc], { type: 'application/javascript' });
+        let _workerUrl = URL.createObjectURL(_wb);
+        if (typeof trustedTypes !== 'undefined' && trustedTypes.createPolicy) {
+            try { _workerUrl = trustedTypes.createPolicy('flow-enhancer-tick', { createScriptURL: u => u }).createScriptURL(_workerUrl); } catch (e) {}
+        }
+        state.trackerTimer = new Worker(_workerUrl);
+        let ticks = 0, _tickleNext = Math.floor(Math.random() * 3) + 3;
+        state.trackerTimer.onmessage = () => {
+            trickBrowser();
+            if (state.running && !state.isLocked) state.ui?.bg.classList.add('generating');
+            if (++ticks >= _tickleNext) { tickleActiveTiles(); ticks = 0; _tickleNext = Math.floor(Math.random() * 4) + 3; }
+            if (state.running && !state.isLocked && !state._networkActive) triggerMonitor();
+        };
+        state.trackerTimer.postMessage('start');
+    }
+
+    function resetState() {
+        Object.assign(state, {
+            running: true, count: 1, isLocked: false, _finishing: false, _monitoring: false, _loadingStart: null, _networkActive: false,
+            _lastFinishAt: 0, _vidSubmitCount: 0, _unusualStreak: 0, _driftMs: (Math.random() < 0.5 ? 1 : -1) * humanDelay(0, 120),
+            _driftCounter: Math.floor(Math.random() * 5), _driftStep: humanDelay(4, 7), _whiskLastRoundId: null, _whiskLimboTimer: null,
+            _whiskKnownThumbCount: 0, _whiskRoundId: null
+        });
+    }
+
+    function start() {
+        sessionMult = 0.80 + Math.random() * 0.50;
+        try { if (navigator.locks) navigator.locks.request('flow_bg_active', { mode: 'shared' }, () => new Promise(() => {})); } catch (e) {}
+        startAudioKeepAlive(); window._flowActiveEngine = detectEngineFromButton();
+        markAllAsOld(); resetState(); state.savedHadAttachment = hasAttachment(); safeUpdateBaseTitle();
+        if (isWhiskMode()) {
+            const doc = getWhiskDoc();
+            if (doc) {
+                const ed = $qs('input.whisk-prompt-input', doc);
+                const fk = ed ? Object.keys(ed).find(k => k.startsWith('__reactFiber')) : null;
+                const txt = ((fk ? (ed[fk]?.memoizedProps?.value ?? ed[fk]?.pendingProps?.value ?? '') : '') || (ed ? ed.value : '')).trim();
+                if (txt) state.savedPrompt = txt + (Math.random() < 0.5 ? ' ' : '');
+            }
+        } else {
+            const ed = getEditor(), txt = (ed?.innerText || ed?.textContent || '').replace(/\u200B/g, '').trim();
+            if (txt && !txt.includes('quer criar') && !txt.includes('quer mudar')) {
+                const trail = Math.random() < 0.5 ? ' ' : '';
+                if (isEditMode()) state.savedEditPrompt = txt + trail; else state.savedPrompt = txt + trail;
+            }
+        }
+        if (state.ui) { state.ui.bg.style.backgroundColor = ''; state.ui.bg.classList.add('active', 'generating'); }
+        updateBtnUI(); try { unsafeWindow._flowState = state; } catch (e) { window._flowState = state; }
+        initEngine();
+        if (detectEngineFromButton() === 'video' || isWhiskMode()) return submitBatchRound();
+        const sub = getSubmitBtn();
+        if (sub) { state._acceptUntil = Date.now() + 4000; fireReactSubmit(sub); }
+        state._lastSubmitAt = Date.now();
+    }
+
+    const applyTheme = () => { if (!isWhiskMode()) document.body?.classList.toggle('flow-dark', state.theme); };
+
+    function ensureExpandBtn() {
+        if (isWhiskMode()) return;
+        const box = $qs('div:has(> div > div[data-slate-editor="true"])');
+        if (!box || $qs('.flow-exp-btn', box)) return;
+        const submitBtn = $qsa('button', box).find(b => $qs('i', b)?.textContent?.trim() === 'arrow_forward');
+        if (!submitBtn || !submitBtn.previousElementSibling) return;
+        const anchor = submitBtn.previousElementSibling, btn = document.createElement('button');
+        btn.className = 'flow-exp-btn'; btn.innerHTML = '&#9650;';
+        btn.style.cssText = 'background:var(--C1,#191724);border:none;color:var(--C4,#E0DEF4);cursor:pointer;padding:0;border-radius:8px;font-size:14px;height:34px;width:34px;display:flex;align-items:center;justify-content:center;margin-right:8px;flex-shrink:0;transition:all 0.2s ease;';
+        let expanded = false;
+        btn.onclick = e => {
+            e.preventDefault(); e.stopPropagation(); expanded = !expanded;
+            box.style.height = expanded ? '600px' : ''; box.style.maxHeight = expanded ? 'none' : ''; box.style.overflowY = expanded ? 'auto' : '';
+            btn.innerHTML = expanded ? '&#9660;' : '&#9650;';
+        };
+        anchor.parentElement.insertBefore(btn, anchor);
+    }
+
+    function ensureTimelineBtn() {
+        const fs = $qsa('button').find(b => $qs('i', b)?.textContent?.trim() === 'fullscreen');
+        const bar = fs?.parentElement;
+        if (!bar || $qs('.fe-tl-btn', bar)) { _feApplyTlState(); return; }
+        const btn = document.createElement('button');
+        btn.className = 'fe-tl-btn'; btn.title = 'Timeline'; btn.textContent = _feCollapsed ? '▲' : '▼';
+        btn.style.cssText = 'background:#191724;color:#e0def4;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;margin-left:6px;flex-shrink:0;';
+        btn.onclick = () => { _feCollapsed = !_feCollapsed; _feApplyTlState(); };
+        bar.appendChild(btn); _feApplyTlState();
+    }
+
+    function hideFlowWarning() {
+        $qsa('p').forEach(p => { if (p.textContent.includes('Google Flow pode cometer erros') || p.textContent.includes('can make mistakes')) p.style.display = 'none'; });
+    }
+
+    function maintainLoop() {
+        if (!document.body) return;
+        applyTheme();
+        if (!document.getElementById('flow-controlWrapper')) {
+            const wrap = document.createElement('div'); wrap.id = 'flow-controlWrapper';
+            const bg = document.createElement('div'); bg.id = 'flow-indicatorBG';
+            const text = document.createElement('div'); text.id = 'flow-statusText'; text.textContent = 'OFF';
+            bg.appendChild(text);
+            const input = document.createElement('input'); input.id = 'flow-retryInput'; input.type = 'text'; input.placeholder = '';
+            wrap.appendChild(bg); wrap.appendChild(input);
+            wrap.onclick = e => {
+                e.stopPropagation(); if (state.running) return stopCycle('OFF');
+                if (input.style.display !== 'flex') { state.inputMode = 'normal'; state.batch.active = false; input.value = ''; input.placeholder = 'Tents'; text.style.display = 'none'; input.style.display = 'flex'; input.focus(); }
+            };
+            wrap.oncontextmenu = e => {
+                e.preventDefault(); e.stopPropagation(); if (state.running) return;
+                state.inputMode = 'batch_target'; state.batch.active = true; state.batch.current = 0; input.value = ''; input.placeholder = 'Meta'; text.style.display = 'none'; input.style.display = 'flex'; input.focus();
+            };
+            input.onkeydown = e => {
+                if (e.key === 'Escape') { input.style.display = 'none'; text.style.display = 'flex'; input.value = ''; return; }
+                if (e.key !== 'Enter' || !input.value) return;
+                const val = parseInt(input.value) || 1;
+                if (state.inputMode === 'batch_target') { state.batch.target = val; state.max = 0; input.value = ''; input.placeholder = 'Cap (0=∞)'; state.inputMode = 'batch_cap'; return; }
+                state.max = val; text.style.display = 'flex'; input.style.display = 'none'; start();
+            };
+            state.ui = { bg, text, wrap }; document.body.appendChild(wrap);
+        }
+        ensureExpandBtn(); ensureTimelineBtn(); hideFlowWarning();
+        const curUrl = window.location.href;
+            if (curUrl !== _feLastHiddenUrl) {
+                const histBtn = $qsa('button').find(btn => {
+                    const icon = $qs('i.google-symbols', btn);
+                    return icon && icon.textContent.trim() === 'history';
+                });
+                
+                if (histBtn) { 
+                    _feLastHiddenUrl = curUrl; 
+                    histBtn.click(); 
+                }
+            }
+        }
+
+    function getDialog() {
+        return $qsa('[role="dialog"][data-state="open"][tabindex="-1"]').find(d => d.getBoundingClientRect().width > 0 && $qs('#add-menu-input', d)) || null;
+    }
+
+    function discoverLayout() {
+        const dialog = getDialog();
+        if (!dialog) return null;
+        const scroller = $qs('[data-testid="virtuoso-scroller"]', dialog), itemList = $qs('[data-testid="virtuoso-item-list"]', dialog);
+        if (!scroller || !itemList) return null;
+        let node = scroller, rowContainer = null, leftPanel = scroller, rightPanel = null;
+        while (node.parentElement) {
+            const parent = node.parentElement;
+            if (parent.children.length > 1) {
+                const other = Array.from(parent.children).find(c => c !== node);
+                if (other) { rowContainer = parent; leftPanel = node; rightPanel = other; break; }
+            }
+            node = parent;
+        }
+        return (rowContainer && rightPanel) ? { scroller, itemList, rowContainer, leftPanel, rightPanel } : null;
+    }
+
+    function getRowHeight() {
+        const wrapper = $qs('[data-known-size]', FSM_STATE.layout.itemList);
+        return wrapper ? parseFloat(wrapper.getAttribute('data-known-size')) : 48;
+    }
+
+    function findRealOption(index) {
+        const wrapper = $qs(`[data-index="${index}"]`, FSM_STATE.layout.itemList);
+        return wrapper ? $qs('[role="option"]', wrapper) : null;
+    }
+
+    function fsmSimulateClick(el, shift) {
+        const opts = { bubbles: true, cancelable: true, composed: true, shiftKey: !!shift };
+        ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click'].forEach(t => el.dispatchEvent(new MouseEvent(t, opts)));
+    }
+
+    function waitForOption(index, timeoutMs) {
+        return new Promise(resolve => {
+            const start = performance.now();
+            const tick = () => {
+                const opt = findRealOption(index);
+                if (opt) return resolve(opt);
+                if (performance.now() - start > timeoutMs) return resolve(null);
+                requestAnimationFrame(tick);
+            };
+            tick();
+        });
+    }
+
+    async function selectByIndexInternal(index) {
+        let opt = findRealOption(index);
+        if (!opt) {
+            FSM_STATE.layout.scroller.scrollTop = Math.max(0, index * getRowHeight() - FSM_STATE.layout.scroller.clientHeight / 2);
+            opt = await waitForOption(index, CONFIG.FSM_WAIT_TIMEOUT_MS);
+        }
+        if (opt && opt.getAttribute('aria-selected') !== 'true') fsmSimulateClick(opt, true);
+    }
+
+    function queueSelectByIndex(index) {
+        FSM_STATE.queue = FSM_STATE.queue.then(() => selectByIndexInternal(index).catch(() => {}));
+        return FSM_STATE.queue;
+    }
+
+    function ensureTile(index) {
+        if (FSM_STATE.mirrorMap.has(index)) return FSM_STATE.mirrorMap.get(index);
+        const tile = document.createElement('div');
+        tile.className = 'fsm-tile'; tile.dataset.fsmIndex = String(index);
+        const img = document.createElement('img'); img.draggable = false; tile.appendChild(img);
+        FSM_STATE.mirrorMap.set(index, tile);
+        let beforeTile = null, beforeIndex = Infinity;
+        FSM_STATE.mirrorMap.forEach((t, i) => { if (i > index && i < beforeIndex) { beforeIndex = i; beforeTile = t; } });
+        const ref = beforeTile || $qs('.fsm-sentinel', FSM_STATE.shadowGrid);
+        ref ? FSM_STATE.shadowGrid.insertBefore(tile, ref) : FSM_STATE.shadowGrid.appendChild(tile);
+        return tile;
+    }
+
+    function syncTileFromReal(index) {
+        const opt = findRealOption(index);
+        if (!opt) return;
+        const img = $qs('img', opt), tile = ensureTile(index);
+        if (img && tile.firstChild.src !== img.src) tile.firstChild.src = img.src;
+        tile.classList.toggle('fsm-selected', opt.getAttribute('aria-selected') === 'true');
+    }
+
+    function formatActionPanel() {
+        if (!FSM_STATE.layout || !FSM_STATE.layout.rightPanel) return;
+        const imgTarget = $qs('img', FSM_STATE.layout.rightPanel);
+        if (imgTarget) {
+            let wrapper = imgTarget;
+            while (wrapper.parentElement && wrapper.parentElement.parentElement !== FSM_STATE.layout.rightPanel) wrapper = wrapper.parentElement;
+            if (!wrapper.classList.contains('fsm-thumb-wrapper')) { wrapper.style.cssText = ''; wrapper.classList.add('fsm-thumb-wrapper'); }
+        }
+    }
+
+    function scanRealOptions() {
+        $qsa('[role="option"]', FSM_STATE.layout.itemList).forEach(opt => {
+            const wrapper = opt.closest('[data-index]');
+            if (wrapper) syncTileFromReal(Number(wrapper.getAttribute('data-index')));
+        });
+    }
+
+    function setupMirrorObserver() {
+        if (FSM_STATE.mirrorObserver) FSM_STATE.mirrorObserver.disconnect();
+        FSM_STATE.mirrorObserver = new MutationObserver(mutations => {
+            if (mutations.some(m => m.type === 'childList' || (m.type === 'attributes' && m.attributeName === 'aria-selected'))) { scanRealOptions(); formatActionPanel(); }
+        });
+        FSM_STATE.mirrorObserver.observe(FSM_STATE.layout.itemList, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-selected'] });
+    }
+
+    function updateTileMetrics() {
+        if (!FSM_STATE.shadowGrid) return;
+        if (FSM_STATE.active && FSM_STATE.layout) {
+            const dialog = getDialog();
+            if (dialog) {
+                const btnMedia = $qsa('button', dialog).find(b => /enviar mídia/i.test(b.textContent));
+                if (btnMedia && FSM_STATE.layout.rightPanel.parentElement) {
+                    FSM_STATE.layout.rightPanel.style.setProperty('--fsm-dock-left', `${btnMedia.getBoundingClientRect().left - FSM_STATE.layout.rightPanel.parentElement.getBoundingClientRect().left}px`);
+                }
+            }
+        }
+        formatActionPanel();
+        const style = getComputedStyle(FSM_STATE.shadowGrid);
+        const gap = parseFloat(style.columnGap || style.gap) || 0;
+        const innerWidth = FSM_STATE.shadowGrid.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
+        const tileSize = (innerWidth - gap * (CONFIG.FSM_COLUMNS - 1)) / CONFIG.FSM_COLUMNS;
+        if (tileSize > 0) FSM_STATE.shadowGrid.style.gridAutoRows = `${tileSize}px`;
+    }
+
+    function setupSentinelScroll() {
+        if (FSM_STATE.sentinelObserver) FSM_STATE.sentinelObserver.disconnect();
+        const sentinel = document.createElement('div'); sentinel.className = 'fsm-sentinel';
+        FSM_STATE.shadowGrid.appendChild(sentinel);
+        FSM_STATE.sentinelObserver = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && !FSM_STATE.drag) FSM_STATE.layout.scroller.scrollTop += Math.max(FSM_STATE.layout.scroller.clientHeight, 300);
+        }, { root: FSM_STATE.shadowGrid, threshold: 0.1 });
+        FSM_STATE.sentinelObserver.observe(sentinel);
+    }
+
+    function setupShadowRubberBand() {
+        FSM_STATE.shadowGrid.addEventListener('mousedown', e => {
+            if (e.button !== 0 || (FSM_STATE.shadowGrid.offsetWidth - FSM_STATE.shadowGrid.clientWidth > 0 && e.clientX >= FSM_STATE.shadowGrid.getBoundingClientRect().right - (FSM_STATE.shadowGrid.offsetWidth - FSM_STATE.shadowGrid.clientWidth))) return;
+            const tileClicked = e.target.closest('.fsm-tile');
+            e.preventDefault(); FSM_STATE.drag = true;
+
+            const captureLayer = document.createElement('div'); captureLayer.style.cssText = 'position:fixed;inset:0;z-index:999998;cursor:crosshair;';
+            const rectEl = document.createElement('div'); rectEl.className = 'fsm-rubberband'; rectEl.style.display = 'none';
+            document.body.appendChild(captureLayer); document.body.appendChild(rectEl);
+
+            const startX = e.clientX, startY = e.clientY;
+            const touched = new Set();
+            let moved = false, selecting = false, autoDir = 0, rafId = null;
+
+            const autoTick = () => { if (autoDir !== 0) FSM_STATE.shadowGrid.scrollTop += autoDir * CONFIG.FSM_SCROLL_STEP; rafId = requestAnimationFrame(autoTick); };
+            rafId = requestAnimationFrame(autoTick);
+
+            const onMove = ev => {
+                if (!ev.isTrusted || ev._fsmForwarded) return;
+                const dx = Math.abs(ev.clientX - startX), dy = Math.abs(ev.clientY - startY);
+                if (dx > 4 || dy > 4) moved = true;
+                if (dx > 8 || dy > 8) { selecting = true; rectEl.style.display = ''; }
+                if (!selecting) return;
+
+                const left = Math.min(startX, ev.clientX), top = Math.min(startY, ev.clientY);
+                const w = Math.abs(ev.clientX - startX), h = Math.abs(ev.clientY - startY);
+                rectEl.style.cssText = `left:${left}px;top:${top}px;width:${w}px;height:${h}px;`;
+                const box = { left, top, right: left + w, bottom: top + h };
+
+                $qsa('.fsm-tile', FSM_STATE.shadowGrid).forEach(t => {
+                    if (touched.has(t)) return;
+                    const r = t.getBoundingClientRect();
+                    if (!(r.left > box.right || r.right < box.left || r.top > box.bottom || r.bottom < box.top)) {
+                        touched.add(t); t.classList.add('fsm-selected'); queueSelectByIndex(Number(t.dataset.fsmIndex));
+                    }
+                });
+                const gr = FSM_STATE.shadowGrid.getBoundingClientRect();
+                autoDir = ev.clientY < gr.top + CONFIG.FSM_EDGE && ev.clientY > gr.top ? -1 : (ev.clientY > gr.bottom - CONFIG.FSM_EDGE && ev.clientY < gr.bottom ? 1 : 0);
+            };
+
+            const onUp = ev => {
+                if (!ev.isTrusted) return;
+                document.removeEventListener('mousemove', onMove, { capture: true }); document.removeEventListener('mouseup', onUp, { capture: true });
+                cancelAnimationFrame(rafId); captureLayer.remove(); rectEl.remove();
+                FSM_STATE.drag = false;
+                if (!moved && tileClicked) queueSelectByIndex(Number(tileClicked.dataset.fsmIndex)).then(() => tileClicked.classList.add('fsm-selected'));
+            };
+            document.addEventListener('mousemove', onMove, { capture: true }); document.addEventListener('mouseup', onUp, { capture: true });
+        });
+    }
+
+    function toggleGridMode() {
+        if (FSM_STATE.active) {
+            FSM_STATE.active = false;
+            if (FSM_STATE.sentinelObserver) { FSM_STATE.sentinelObserver.disconnect(); FSM_STATE.sentinelObserver = null; }
+            if (FSM_STATE.layout) {
+                FSM_STATE.layout.rightPanel.classList.remove('fsm-right-docked');
+                FSM_STATE.layout.rightPanel.style.removeProperty('--fsm-dock-left');
+                const orig = FSM_STATE.layout.rightPanel.dataset.fsmOrigStyle || '';
+                orig ? FSM_STATE.layout.rightPanel.setAttribute('style', orig) : FSM_STATE.layout.rightPanel.removeAttribute('style');
+                FSM_STATE.layout.rowContainer.style.position = FSM_STATE.layout.rowContainer.dataset.fsmOrigPosition || '';
+                const thumb = $qs('.fsm-thumb-wrapper', FSM_STATE.layout.rightPanel);
+                if (thumb) { thumb.classList.remove('fsm-thumb-wrapper'); thumb.style.cssText = ''; }
+            }
+            if (FSM_STATE.shadowGrid && FSM_STATE.shadowGrid.parentElement) FSM_STATE.shadowGrid.parentElement.removeChild(FSM_STATE.shadowGrid);
+            if (FSM_STATE.mirrorObserver) FSM_STATE.mirrorObserver.disconnect();
+            $qsa('.fsm-grid-toggle').forEach(b => b.classList.remove('fsm-active'));
+        } else {
+            if (FSM_STATE.active && FSM_STATE.shadowGrid && FSM_STATE.shadowGrid.parentElement) return;
+            FSM_STATE.layout = discoverLayout();
+            if (!FSM_STATE.layout) return;
+            FSM_STATE.active = true;
+            if (!FSM_STATE.layout.rowContainer.dataset.fsmOrigPosition) FSM_STATE.layout.rowContainer.dataset.fsmOrigPosition = FSM_STATE.layout.rowContainer.style.position || '';
+            FSM_STATE.layout.rowContainer.style.position = 'relative';
+            FSM_STATE.layout.rightPanel.dataset.fsmOrigStyle = FSM_STATE.layout.rightPanel.getAttribute('style') || '';
+            FSM_STATE.layout.rightPanel.classList.add('fsm-right-docked');
+            if (!FSM_STATE.shadowGrid) { FSM_STATE.shadowGrid = document.createElement('div'); FSM_STATE.shadowGrid.className = 'fsm-shadow-grid'; setupShadowRubberBand(); }
+            const bg = getComputedStyle(FSM_STATE.layout.rowContainer).backgroundColor;
+            FSM_STATE.shadowGrid.style.background = bg && bg !== 'rgba(0, 0, 0, 0)' ? bg : '#1b1b1f';
+            FSM_STATE.layout.rowContainer.appendChild(FSM_STATE.shadowGrid);
+            FSM_STATE.mirrorMap.clear(); FSM_STATE.shadowGrid.innerHTML = '';
+            setupMirrorObserver(); setupSentinelScroll(); scanRealOptions(); formatActionPanel();
+            requestAnimationFrame(updateTileMetrics);
+            if (!FSM_STATE.resizeBound) { FSM_STATE.resizeBound = true; window.addEventListener('resize', () => requestAnimationFrame(updateTileMetrics)); }
+            $qsa('.fsm-grid-toggle').forEach(b => b.classList.add('fsm-active'));
+        }
+    }
+
+    function tryInit() {
+        const dialog = getDialog();
+        if (!dialog) return;
+        const input = $qs('#add-menu-input', dialog);
+        if (!input) {
+            if (!FSM_STATE.retryTimer) FSM_STATE.retryTimer = setTimeout(() => { FSM_STATE.retryTimer = null; tryInit(); }, CONFIG.FSM_INIT_RETRY_MS);
+            return;
+        }
+        const searchWrapper = input.parentElement;
+        if (!$qs('.fsm-grid-toggle', searchWrapper.parentElement)) {
+            searchWrapper.style.flex = '0 1 65%';
+            const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'fsm-grid-toggle'; btn.title = 'Alternar grade'; btn.innerHTML = '<i class="google-symbols" style="font-size:20px;">grid_view</i>';
+            btn.addEventListener('click', toggleGridMode);
+            searchWrapper.insertAdjacentElement('afterend', btn);
+            if (FSM_STATE.active) btn.classList.add('fsm-active');
+        }
+    }
+
+    const _bodyObserver = new MutationObserver((mutations) => {
+        if (mutations.some(m => m.type === 'childList')) tryInit();
+        if (!state.running || state.isLocked || state._monitoring || state._networkActive || FSM_STATE.active) return;
+        if (_monitorDbt) return;
+        _monitorDbt = setTimeout(() => {
+            _monitorDbt = null;
+            if (state.running && !state.isLocked && !state._monitoring && !state._networkActive && !FSM_STATE.active) triggerMonitor();
+        }, 600);
+    });
+
+    setInterval(maintainLoop, 1000);
+
+    const revertTitle = () => { if (!state.running && document.title !== BASE_TITLE && (document.title.match(/\[\d+\/\d+\]/) || ['Sucesso', 'Erro', 'Limite', 'Falha'].some(w => document.title.includes(w)))) document.title = BASE_TITLE; };
+    window.addEventListener('focus', revertTitle); window.addEventListener('pointermove', revertTitle, { passive: true });
+
+    document.addEventListener('keydown', e => {
+        const k = e.key.toLowerCase();
+        
+        if (e.ctrlKey && e.altKey && k === 'v') {
+            e.preventDefault();
+            runDefibrillator();
+            return;
+        }
+
+        if (e.ctrlKey && e.altKey && k === 'i') {
+            e.preventDefault();
+            if (document.getElementById('sniper-modal')) return;
+            const modal = document.createElement('div'); modal.id = 'sniper-modal';
+            modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--C2,#232136);border:2px solid #ebbcba;padding:20px;z-index:999999;border-radius:12px;color:#e0def4;font-family:sans-serif;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.5);';
+            modal.innerHTML = `<h3 style="margin-top:0;color:#ebbcba;">Sniper: Sessões</h3><p style="font-size:14px;margin-bottom:15px;">Quantos ciclos testar?</p><input type="number" id="sniper-input" min="1" max="100" value="${window._sniperTarget}" style="width:60px;text-align:center;padding:5px;border-radius:5px;border:none;outline:none;background:#191724;color:#e0def4;font-size:16px;"><br><br><button id="sniper-btn" style="background:#81c784;color:#191724;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:bold;">Definir</button><button id="sniper-cancel" style="background:#eb6f92;color:#191724;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:bold;margin-left:8px;">Cancelar</button>`;
+            document.body.appendChild(modal);
+            document.getElementById('sniper-btn').onclick = () => { window._sniperTarget = parseInt(document.getElementById('sniper-input').value) || 3; modal.remove(); };
+            document.getElementById('sniper-cancel').onclick = () => modal.remove();
+            return;
+        }
+        if (e.ctrlKey && e.altKey && e.code === 'KeyC') { e.preventDefault(); (async function () { const saved = _savePreserved(); if ('caches' in window) { const ck = await caches.keys(); await Promise.all(ck.map(k => caches.delete(k))); } (await indexedDB.databases()).forEach(db => indexedDB.deleteDatabase(db.name)); localStorage.clear(); sessionStorage.clear(); _restorePreserved(saved); })(); return; }
+        if (e.ctrlKey && e.altKey && k === 'l') {
+            const a = document.activeElement;
+            if (a && (a.isContentEditable || a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) return;
+            e.preventDefault();
+            const mainToasts = $qsa('[data-sonner-toast], [data-sonner-toaster] li, .sonner-toast'), wDoc = getWhiskDoc();
+            const whiskToasts = wDoc ? $qsa('[data-sonner-toast], [data-sonner-toaster] li, .sonner-toast', wDoc) : [];
+            if (mainToasts.length > 0 || whiskToasts.length > 0) {
+                const hide = list => list.forEach(t => { t.style.transition = 'transform 0.25s ease, opacity 0.25s ease, height 0.25s ease, margin 0.25s ease, padding 0.25s ease'; t.style.transform = 'translateX(200%)'; t.style.opacity = '0'; t.style.pointerEvents = 'none'; setTimeout(() => { t.style.display = 'none'; }, 250); });
+                if (mainToasts.length > 0) hide(mainToasts); if (whiskToasts.length > 0) hide(whiskToasts);
+            }
+            deleteErrorsSequentially(); return;
+        }
+        if (e.ctrlKey && e.altKey && k === 'o') {
+            e.preventDefault();
+            const emailEl = $qs(CLASS.ACCOUNT_EMAIL), email = emailEl?.innerText.includes('@') ? emailEl.innerText : (document.documentElement.innerHTML.match(/([a-zA-Z0-9._-]+@gmail\.com)/)?.[1] || '');
+            if (email) GM_setValue('flow_last_email', email);
+            GM_setValue('flow_cycling', true);
+            (async () => {
+                try {
+                    const { csrfToken } = await fetch('/fx/api/auth/csrf').then(r => r.json());
+                    const res = await fetch('/fx/api/auth/signin/google', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ csrfToken, callbackUrl: 'https://labs.google/fx/pt/tools/flow/', json: 'true' }) });
+                    const { url } = await res.json();
+                    if (url) {
+                        const u = new URL(url); u.searchParams.set('prompt', 'select_account'); u.searchParams.delete('login_hint');
+                        const meta = document.createElement('meta'); meta.name = 'referrer'; meta.content = 'no-referrer'; document.head.appendChild(meta);
+                        await new Promise(r => setTimeout(r, 50)); window.location.href = u.toString();
+                    }
+                } catch (err) { GM_setValue('flow_cycling', false); }
+            })();
+            return;
+        }
+        if (e.key === 'Escape') {
+            stopCycle('OFF');
+            const input = document.getElementById('flow-retryInput'), text = document.getElementById('flow-statusText');
+            if (input) input.style.display = 'none'; if (text) text.style.display = 'flex';
+        }
+        if (e.shiftKey && k === 'u' && !isWhiskMode()) {
+            const a = document.activeElement;
+            if (a && (a.isContentEditable || a.tagName === 'INPUT' || a.tagName === 'TEXTAREA')) return;
+            e.preventDefault(); state.theme = !state.theme; localStorage.setItem('flowThemeEnabled', state.theme); applyTheme();
+        }
+    });
+
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', () => { _bodyObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-state', 'src'] }); tryInit(); }); }
+    else { _bodyObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-state', 'src'] }); tryInit(); }
+
+    GM_addStyle(`
+body.flow-dark{--C1:#191724;--C2:#232136;--C3:#393552;--C4:#E0DEF4}
+body.flow-dark html,body.flow-dark,body.flow-dark #root,body.flow-dark #__next,body.flow-dark .fmIpGD,body.flow-dark .keVIwb,body.flow-dark .gNghsT,.dBxvrx,body.flow-dark div:has(> header):has(> main h1),.loqVPM, header, .CfxJ, .bKTLet {background:var(--C2)!important}
+body.flow-dark [data-state="active"],body.flow-dark .jGESqS,body.flow-dark .ldbhld,body.flow-dark .ewGlDn,body.flow-dark .dnFqQq,body.flow-dark .ebWDJa,body.flow-dark .fPutAP,body.flow-dark .kgNVWH,body.flow-dark .fpwRug,body.flow-dark .hxIoIH,body.flow-dark .hrqLWG,body.flow-dark button:has(img[alt*="perfil"]){background:var(--C1)!important}
+body.flow-dark [data-state="open"]:not([data-side="top"],.iqdwlG),body.flow-dark .eclAsy,body.flow-dark .cOxVGw,body.flow-dark .fiSTaA,body.flow-dark .hMIBvb,body.flow-dark .dnUpXC,body.flow-dark .fIDNzQ,body.flow-dark .bJtjIJ,body.flow-dark .gjaypZ,body.flow-dark .eLcnYS,body.flow-dark .llonRc,body.flow-dark .fIhFSf,body.flow-dark .bmwijs,.ggcdVM,body.flow-dark [data-sonner-toast],body.flow-dark .jwpSCm,body.flow-dark div:has(> div[data-scroll-state]), .cLiFCS, .eEoyFz,.ccqZFg,body.flow-dark div:has(> div > div > nav[aria-label="Tudo"]), .jTFUsC {background:var(--C3)!important}
+body.flow-dark *{color:var(--C4)!important}
+body.flow-dark footer,.hUfDBA{display:none!important}
+body.flow-dark .esibWn{background:var(--C2) repeating-linear-gradient(12deg,var(--C1),transparent 100px!important)}
+#flow-controlWrapper{position:fixed;bottom:0;right:0;z-index:99999;padding:25px;cursor:pointer;font-family:sans-serif}
+#flow-indicatorBG{position:fixed;bottom:10px;right:10px;z-index:99999;width:50px;height:50px;border-radius:50%;background-color:#393552;box-shadow:0 4px 15px rgba(0,0,0,.3);transition:all .3s ease;opacity:0;border:2px solid transparent}
+#flow-statusText{position:fixed;bottom:10px;right:10px;z-index:100000;width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#E0DEF4;pointer-events:none;text-align:center;line-height:normal}
+#flow-controlWrapper:hover #flow-indicatorBG,#flow-indicatorBG.active{opacity:1}
+#flow-indicatorBG.active{background-color:#191724}
+#flow-indicatorBG.generating{border-color:#ebbcba;animation:pulse 2s infinite}
+#flow-retryInput{display:none;position:fixed;bottom:10px;right:10px;z-index:100001;width:50px;height:50px;border-radius:50%;border:2px solid #908caa;background-color:#232136;color:#E0DEF4;text-align:center;font-size:14px;font-weight:700;outline:none;padding:0;margin:0}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(235,188,186,.4)}70%{box-shadow:0 0 0 10px rgba(235,188,186,0)}100%{box-shadow:0 0 0 0 rgba(235,188,186,0)}}
+.fsm-grid-toggle{width:36px;height:36px;min-width:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(218,220,224,0.1);border:none;cursor:pointer;color:hsla(0,0%,85%,1);margin:0 8px;flex-shrink:0}
+.fsm-grid-toggle:hover{background:rgba(218,220,224,0.2)}
+.fsm-grid-toggle.fsm-active{background:rgba(120,150,255,0.4);color:white}
+.fsm-rubberband{position:fixed;border:1px solid rgba(120,150,255,0.9);background:rgba(120,150,255,0.15);pointer-events:none;z-index:999999}
+.fsm-shadow-grid{position:absolute;inset:0;z-index:50;overflow-y:auto;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:12px;padding-bottom:120px;box-sizing:border-box}
+.fsm-tile{position:relative;border-radius:8px;overflow:hidden;cursor:pointer;background:rgba(255,255,255,0.04)}
+.fsm-tile img{width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none;user-select:none}
+.fsm-tile.fsm-selected{outline:3px solid rgba(120,150,255,0.9);outline-offset:-3px}
+.fsm-tile.fsm-selected::after{content:'';position:absolute;inset:0;background:rgba(120,150,255,0.25)}
+.fsm-sentinel{height:1px;width:100%;grid-column:1/-1}
+.fsm-right-docked{position:absolute!important;left:var(--fsm-dock-left,-135px)!important;bottom:55px!important;width:120px!important;z-index:999999!important;margin:0!important;padding:0!important;top:auto!important;right:auto!important;height:auto!important;background:transparent!important;overflow:visible!important}
+.fsm-right-docked>div{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;transform:none!important;width:100%!important;height:auto!important;background:transparent!important;box-shadow:none!important;display:flex!important;flex-direction:column!important;gap:8px!important;padding:0!important}
+.fsm-right-docked button{position:static!important;transform:none!important;width:100%!important;margin:0!important;height:34px!important;min-height:34px!important;padding:0 8px!important;border-radius:18px!important;pointer-events:auto!important;display:flex!important}
+.fsm-right-docked button *{font-size:11px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;display:revert!important}
+.fsm-right-docked .fsm-thumb-wrapper{display:block!important;width:100%!important;aspect-ratio:1/1!important;border-radius:12px!important;overflow:hidden!important;margin-bottom:8px!important;box-shadow:0 4px 12px rgba(0,0,0,0.5)!important;flex-shrink:0!important}
+.fsm-right-docked .fsm-thumb-wrapper img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important}
+`);
+})();
