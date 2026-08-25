@@ -1,0 +1,82 @@
+// ==UserScript==
+// @name        Opal Enhancer
+// @namespace   http://tampermonkey.net/
+// @version     1.7
+// @description Versão com ajustes de botões de zoom e inputs.
+// @author      You
+// @match       https://opal.google/*
+// @grant       none
+// @run-at      document-start
+// ==/UserScript==
+
+(function() {
+    const themeCSS = `:host,:root{--C1:#191724!important;--C2:#232136!important;--C3:#393552!important;--C4:#E0DEF4!important;--B1:1px solid var(--C4)!important;--BR1:15px!important;--BR2:5px!important}*{color:var(--C4)!important}section:not(.gallery-header),#item-selector,dialog #container,#board-overflow,bb-ve-header,#graph-controls,#container #content,form div.node.web #content,bb-expanding-textarea,#side-nav-controls{background-color:var(--C3)!important}#wrapper #hero,#wrapper,bb-project-listing,bb-renderer{background-color:var(--C2)!important}#create-new-button-inline,#sign-out,#publish,#top-shelf #items,#container header,#p-render-mode button.selected,#tools span.g-icon,#edit-button,#mode-toggle #app,#mode-toggle #canvas,#top-shelf #items button,#run,#zoom-in,#zoom-to-fit,#undo,#redo{background-color:var(--C1)!important}`;
+
+    let isActive = localStorage.getItem('opalThemeActive') === 'true';
+
+    function injectStyle(root) {
+        if (!root) return;
+        const existing = root.querySelector ? root.querySelector('#opal-enhancer-style') : null;
+        if (existing) return;
+        const style = document.createElement('style');
+        style.id = 'opal-enhancer-style';
+        style.textContent = themeCSS;
+        try { root.appendChild(style); } catch (e) {}
+    }
+
+    function removeStyle(root) {
+        if (!root) return;
+        const style = root.querySelector ? root.querySelector('#opal-enhancer-style') : null;
+        if (style) style.remove();
+    }
+
+    function scanAndInject(node) {
+        if (!node) return;
+        if (node.nodeType === 1 && node.shadowRoot) {
+            if (isActive) injectStyle(node.shadowRoot);
+            else removeStyle(node.shadowRoot);
+            scanAndInject(node.shadowRoot);
+        }
+        const children = node.children || (node.shadowRoot ? node.shadowRoot.children : null);
+        if (children) {
+            for (let i = 0; i < children.length; i++) {
+                scanAndInject(children[i]);
+            }
+        }
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        if (!isActive) return;
+        for (const mutation of mutations) {
+            for (const node of mutation.addedNodes) {
+                if (node.nodeType === 1) scanAndInject(node);
+            }
+        }
+    });
+
+    function toggle() {
+        isActive = !isActive;
+        localStorage.setItem('opalThemeActive', isActive);
+        scanAndInject(document);
+    }
+
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.shiftKey && e.key.toLowerCase() === 'u') toggle();
+    }, true);
+
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'opalThemeActive') {
+            isActive = e.newValue === 'true';
+            scanAndInject(document);
+        }
+    });
+
+    if (isActive) {
+        const check = setInterval(() => {
+            if (document.body) scanAndInject(document);
+        }, 500);
+        setTimeout(() => clearInterval(check), 5000);
+    }
+})();
