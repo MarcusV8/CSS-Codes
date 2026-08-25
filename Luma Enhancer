@@ -1,0 +1,97 @@
+// ==UserScript==
+// @name         Luma Enhancer
+// @namespace    http://tampermonkey.net/
+// @version      7.2
+// @match        https://app.lumalabs.ai/*
+// @grant        GM_download
+// @run-at       document-idle
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    Object.defineProperty(document, 'visibilityState', { get: () => 'visible' });
+    Object.defineProperty(document, 'hidden', { get: () => false });
+    window.addEventListener('visibilitychange', e => e.stopImmediatePropagation(), true);
+
+    let audioAtivo = false;
+    const iniciarAudio = () => {
+        if (audioAtivo) return;
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            gain.gain.value = 0.0001;
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); audioAtivo = true;
+        } catch(e) {}
+    };
+    window.addEventListener('click', iniciarAudio, { once: true, capture: true });
+
+    const capturados = new Set();
+    const baseline = new Set();
+
+    document.querySelectorAll('[data-shape-id]').forEach(el => {
+        baseline.add(el.getAttribute('data-shape-id'));
+    });
+
+    const higienizarURL = (url) => {
+        return url.replace('/cdn-cgi/', '/')
+                  .replace(/width=\d+&?/, '')
+                  .replace(/format=\w+&?/, '')
+                  .replace(/\?&/, '?')
+                  .replace(/\?$/, '');
+    };
+
+    const processar = (el) => {
+        const rawUrl = el.currentSrc || el.src;
+        if (!rawUrl || !rawUrl.includes('cdn.prod01.labs.lumalabs.ai')) return;
+
+        const shape = el.closest('.tl-shape');
+        const shapeId = shape?.getAttribute('data-shape-id');
+        if (!shapeId || baseline.has(shapeId)) return;
+
+        const isVideo = rawUrl.includes('.mp4');
+        const tipoKey = shapeId + (isVideo ? '_v' : '_i');
+
+        if (!capturados.has(tipoKey)) {
+            capturados.add(tipoKey);
+            const finalUrl = higienizarURL(rawUrl);
+
+            let id = 'file';
+            try {
+                const parts = new URL(finalUrl).pathname.split('/');
+                id = parts[parts.length - 1].split('.')[0];
+            } catch(e) {}
+
+            const nome = id + (isVideo ? '.mp4' : '.png');
+
+            GM_download({
+                url: finalUrl,
+                name: nome,
+                saveAs: false
+            });
+        }
+    };
+
+    new MutationObserver((mutations) => {
+        for (const m of mutations) {
+            if (m.addedNodes) {
+                for (const node of m.addedNodes) {
+                    if (node.nodeType === 1) {
+                        const targets = node.tagName.match(/IMG|VIDEO/) ? [node] : node.querySelectorAll('img, video');
+                        targets.forEach(processar);
+                    }
+                }
+            }
+            if (m.type === 'attributes' && m.attributeName === 'src') {
+                processar(m.target);
+            }
+        }
+    }).observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['src']
+    });
+})();
