@@ -1,0 +1,434 @@
+// ==UserScript==
+// @name         GeminiGen Automator
+// @namespace    http://tampermonkey.net/
+// @version      7.8
+// @description  CSS v6.3 + CF bypass + Grok Btn + Fix Firefox + Tab Title Status + Background Fix + Stall Recovery + WS Silent Fail Detection
+// @author       You
+// @match        https://geminigen.ai/*
+// @grant        GM_addStyle
+// @run-at       document-start
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    const CSS_THEME = `:root{--C1:#191724!important;--C2:#232136!important;--C3:#393552!important;--C4:#E0DEF4!important;--B1:1px solid var(--C4)!important;--BR1:15px!important;--BR2:5px!important}body,#reka-tabs-v-0-2-trigger-create-new{background:var(--C2)!important}*{color:var(--C4)!important}.mt-6.mb-4.cursor-pointer{display:none!important}[aria-label="Open menu"],.p-1,[class="iconify i-lucide:zap shrink-0 size-5"]{background:var(--C1)!important}.sm\\:p-6,.lg\\:py-4,.w-full.max-w-\\(--ui-container\\).mx-auto.px-4.sm\\:px-6.lg\\:px-8.flex.items-center.justify-between.gap-3.h-full{background:var(--C3)!important}`;
+
+    const STYLES = `
+        #controlWrapper { position: fixed; bottom: 20px; right: 20px; z-index: 9999; }
+        #geminiUIBox { background: #393552; border: 2px solid transparent; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; overflow: hidden; transition: all 0.2s; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); opacity: 0.6; }
+        #geminiUIBox:not(.active):not(.success):not(.failure):hover { opacity: 1; transform: scale(1.05); border-color: transparent; }
+        #geminiUIBox.active { opacity: 1; border: 3px solid #ffffff !important; box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); }
+        #geminiUIBox.success { opacity: 1; background: #22c55e !important; border-color: #16a34a !important; }
+        #geminiUIBox.failure { opacity: 1; background: #eb6f92 !important; border-color: #be185d !important; }
+        #statusText { color: #E0DEF4; font-size: 16px; font-weight: 700; font-family: sans-serif; user-select: none; line-height: normal; }
+        #retryInput { width: 100%; height: 100%; background: transparent; border: none; color: #fff; text-align: center; font-size: 16px; font-weight: 700; outline: none; display: none; -moz-appearance: textfield; }
+        #retryInput::-webkit-outer-spin-button, #retryInput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    `;
+
+    const SEL = { btn: 'button.bg-gradient-to-r.from-blue-500.to-purple-500', error: '.text-error', loading: '.loading-card-blur', queued: 'span.iconify.i-mdi\\:clock-outline', success: 'video.object-cover.rounded-lg', overlay: 'div.fixed.inset-0[data-state="open"]', modal: 'div.fixed.top-1\\/2.left-1\\/2[data-state="open"]' };
+    const CF_IFRAME_SELECTORS = ['iframe[src*="challenges.cloudflare.com"]', 'iframe[src*="cloudflare.com/cdn-cgi/challenge"]', 'iframe[title*="cloudflare"]', 'iframe[title*="Cloudflare"]', 'iframe[id*="cf-"]', 'iframe[name*="cf-"]'];
+    const CF_PAGE_SELECTORS = ['#challenge-form', '#challenge-stage', '#turnstile-wrapper', '.cf-turnstile', '[data-sitekey]', '#cf-challenge-running'];
+
+    const STALL_TIMEOUT_MS = 45000;
+    const state = { run: false, retry: 0, max: 0, loopId: null, cfAttempts: 0, originalTitle: document.title, stallSince: null, silentFail: false, apiSuccess: false, lastRoundAt: null, _wakeLockResolve: null, _audioCtx: null, waitingQueue: false, currentHistoryUuid: null, pollInterval: null };
+    const ui = { wrap: document.createElement('div'), box: document.createElement('div'), txt: document.createElement('span'), inp: document.createElement('input') };
+    const $ = (s) => s ? document.querySelector(s) : null;
+    const $all = (s) => s ? document.querySelectorAll(s) : [];
+
+    function log(msg) { console.log(`%c[GeminiGen] ${msg}`, 'color: #a855f7; font-weight: bold;'); }
+
+    (function patchWebSocket() {
+        const _WS = window.WebSocket;
+        window.WebSocket = function(url, protocols) {
+            const ws = protocols ? new _WS(url, protocols) : new _WS(url);
+            ws.addEventListener('message', function(event) {
+                if (!state.run) return;
+                try {
+                    const msg = JSON.parse(event.data);
+                    const record = (msg?.payload?.data?.record) || (msg?.payload?.data?.new) || null;
+                    if (!record) return;
+
+                    const { status, generate_result, event_type } = record;
+                    if (event_type !== 'generate_history' && event_type !== 'video') return;
+
+                    if (record.status === 1 && record.history_uuid) {
+                        state.currentHistoryUuid = record.history_uuid;
+                        log(`[BG] Geração iniciada — UUID: ${record.history_uuid}`);
+                        state.lastRoundAt = Date.now();
+                        state.stallSince = null;
+                        state.waitingQueue = false;
+                        startHistoryPolling(record.history_uuid);
+                    } else if (status === 1) {
+                        log('WS: Geração iniciada confirmada pelo servidor');
+                        state.lastRoundAt = Date.now();
+                        state.stallSince = null;
+                        state.waitingQueue = false;
+                    }
+
+                    if (status === 3 && !generate_result) {
+                        state.silentFail = true;
+                    } else if (status === 3 && generate_result) {
+                        state.apiSuccess = true;
+                    }
+                } catch(e) {}
+            });
+            return ws;
+        };
+        Object.keys(_WS).forEach(k => { try { window.WebSocket[k] = _WS[k]; } catch(e) {} });
+        window.WebSocket.prototype = _WS.prototype;
+    })();
+
+    (function patchFetch() {
+        const _fetch = window.fetch;
+        window.fetch = async function(...args) {
+            const res = await _fetch(...args);
+            if (!state.run) return res;
+            try {
+                if (res.status === 422) {
+                    log('Fetch: 422 MAX_PROCESSING_GROK_EXCEEDED');
+                    state.stallSince = Date.now();
+                    state.lastRoundAt = Date.now();
+                    state.waitingQueue = true;
+                }
+                const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+                if (url.includes('geminigen') && (url.includes('history') || url.includes('sync') || url.includes('generate'))) {
+                    res.clone().json().then(data => {
+                        const items = Array.isArray(data) ? data : [data];
+                        for (const item of items) {
+                            if (!item) continue;
+                            if (item.status === 3 && !item.generate_result) {
+                                state.silentFail = true;
+                            } else if (item.status === 3 && item.generate_result) {
+                                state.apiSuccess = true;
+                            }
+                        }
+                    }).catch(() => {});
+                }
+            } catch(e) {}
+            return res;
+        };
+    })();
+
+    const workerBlob = new Blob([`
+        let interval = null;
+        self.onmessage = function(e) {
+            if (e.data.cmd === 'start') {
+                clearInterval(interval);
+                interval = setInterval(() => self.postMessage('tick'), e.data.ms || 1000);
+            } else if (e.data.cmd === 'stop') {
+                clearInterval(interval);
+            }
+        };
+    `], { type: 'application/javascript' });
+
+    const heartbeatWorker = new Worker(URL.createObjectURL(workerBlob));
+    heartbeatWorker.onmessage = () => { if (state.run) loop(); };
+
+    function startHeartbeat(ms = 1000) {
+        heartbeatWorker.postMessage({ cmd: 'start', ms });
+    }
+    function stopHeartbeat() {
+        heartbeatWorker.postMessage({ cmd: 'stop' });
+        clearTimeout(state.loopId);
+    }
+
+    function acquireWakeLock() {
+        if (!navigator.locks) return;
+        navigator.locks.request('geminigen-heartbeat', { mode: 'shared' }, () => {
+            return new Promise(resolve => { state._wakeLockResolve = resolve; });
+        });
+    }
+
+    function releaseWakeLock() {
+        if (state._wakeLockResolve) { state._wakeLockResolve(); state._wakeLockResolve = null; }
+    }
+
+    function startSilentAudio() {
+        try {
+            if (state._audioCtx) return;
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            gain.gain.value = 0.0001;
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start();
+            state._audioCtx = ctx;
+        } catch(e) { log(e.message); }
+    }
+
+    function stopSilentAudio() {
+        try { if (state._audioCtx) { state._audioCtx.close(); state._audioCtx = null; } } catch(e) {}
+    }
+
+    function startHistoryPolling(uuid) {
+        stopHistoryPolling();
+        log(`[BG] Iniciando polling para UUID: ${uuid}`);
+        state.pollInterval = setInterval(async () => {
+            if (!state.run || !uuid) { stopHistoryPolling(); return; }
+            try {
+                const res = await fetch(`https://api.geminigen.ai/api/history/${uuid}`, {
+                    credentials: 'include'
+                });
+                if (!res.ok) {
+                    log(`[BG] Poll HTTP ${res.status} para ${uuid}`);
+                    return;
+                }
+                const data = await res.json();
+                log(`[BG] Poll status=${data.status} result=${!!data.generate_result} uuid=${uuid}`);
+
+                if (data.status === 3 && data.generate_result) {
+                    log(`[BG] ✅ Sucesso confirmado via polling — parando`);
+                    stopHistoryPolling();
+                    state.apiSuccess = true;
+                    state.currentHistoryUuid = null;
+                } else if (data.status === 3 && !data.generate_result) {
+                    log(`[BG] ❌ Falha confirmada via polling — próxima tentativa`);
+                    stopHistoryPolling();
+                    state.silentFail = true;
+                    state.currentHistoryUuid = null;
+                } else if (data.status === 1 || data.status === 2) {
+                    state.lastRoundAt = Date.now();
+                    state.stallSince = null;
+                    log(`[BG] ⏳ Ainda processando (status=${data.status}) — watchdog resetado`);
+                }
+            } catch(e) {
+                log(`[BG] Erro no polling: ${e.message}`);
+            }
+        }, 30000);
+    }
+
+    function stopHistoryPolling() {
+        if (state.pollInterval) {
+            clearInterval(state.pollInterval);
+            state.pollInterval = null;
+        }
+    }
+
+    function simulateClick(el, offsetX = 0, offsetY = 0) {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const x = rect.left + (offsetX || rect.width / 2);
+        const y = rect.top + (offsetY || rect.height / 2);
+        ['mouseover', 'mouseenter', 'mousemove', 'mousedown', 'mouseup', 'click'].forEach(type => {
+            el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, screenX: x, screenY: y }));
+        });
+    }
+
+    function checkAndBypassCloudflare() {
+        const bgMode = document.hidden;
+        if (bgMode) log(`[BG] Verificando Cloudflare em 2º plano...`);
+
+        for (const sel of CF_PAGE_SELECTORS) {
+            const el = $(sel);
+            if (el) {
+                simulateClick(el);
+                const btn = el.querySelector('button, input[type="checkbox"], [role="checkbox"]');
+                if (btn) simulateClick(btn);
+                if (bgMode) log(`[BG] ⚠️ Cloudflare detectado e bypass tentado`);
+                return true;
+            }
+        }
+        let found = false;
+        for (const sel of CF_IFRAME_SELECTORS) {
+            for (const iframe of $all(sel)) {
+                const rect = iframe.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    iframe.focus();
+                    simulateClick(iframe, rect.left + Math.min(25, rect.width * 0.12), rect.top + (rect.height / 2));
+                    found = true;
+                }
+            }
+        }
+        if (found && bgMode) log(`[BG] ⚠️ Cloudflare detectado e bypass tentado`);
+        return found;
+    }
+
+    const updateTheme = () => {
+        const on = localStorage.getItem('geminigen-theme-enabled') === 'true';
+        let el = document.getElementById('geminigen-custom-theme');
+        if (!el) { el = document.createElement('style'); el.id = 'geminigen-custom-theme'; document.head.appendChild(el); }
+        el.textContent = on ? CSS_THEME : '';
+    };
+
+    function setupUI() {
+        const styleEl = document.createElement('style'); styleEl.textContent = STYLES; document.head.appendChild(styleEl);
+        ui.wrap.id = 'controlWrapper'; ui.box.id = 'geminiUIBox'; ui.txt.id = 'statusText'; ui.txt.textContent = '⏻'; ui.inp.id = 'retryInput'; ui.inp.type = 'number'; ui.inp.placeholder = '#'; ui.box.appendChild(ui.txt); ui.box.appendChild(ui.inp); ui.wrap.appendChild(ui.box); document.body.appendChild(ui.wrap);
+        ui.box.onclick = (e) => { if (state.run) reset('⏻'); else if (e.target !== ui.inp) showInput(); };
+        ui.inp.onblur = () => { if (!state.run) hideInput(); };
+        ui.inp.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') handleEnter(); };
+        document.addEventListener('keydown', (e) => {
+            const el = document.activeElement;
+            const isTyping = el && (['INPUT', 'TEXTAREA'].includes(el.tagName) || el.isContentEditable);
+            if (e.shiftKey && e.key.toUpperCase() === 'U' && !isTyping) {
+                e.preventDefault();
+                localStorage.setItem('geminigen-theme-enabled', !(localStorage.getItem('geminigen-theme-enabled') === 'true'));
+                updateTheme();
+            }
+        });
+        const observer = new MutationObserver(() => { if (state.run) checkAndBypassCloudflare(); });
+        observer.observe(document.body, { childList: true, subtree: true });
+        updateTheme();
+    }
+
+    function showInput() { ui.txt.style.display = 'none'; ui.inp.style.display = 'block'; ui.inp.value = ''; ui.inp.focus(); }
+    function hideInput() { ui.inp.style.display = 'none'; ui.txt.style.display = 'block'; }
+    function handleEnter() { const val = parseInt(ui.inp.value, 10); if (val > 0) { state.max = val; hideInput(); start(); } else { hideInput(); } }
+
+    function start() {
+        log('Iniciando...');
+        state.run = true;
+        state.retry = 1;
+        state.lastRoundAt = Date.now();
+        state.stallSince = null;
+        state.silentFail = false;
+        state.apiSuccess = false;
+        state.waitingQueue = false;
+        ui.box.className = '';
+        ui.box.id = 'geminiUIBox';
+        ui.box.classList.add('active');
+        updateStatus();
+        startHeartbeat(1000);
+        acquireWakeLock();
+        startSilentAudio();
+    }
+
+    function reset(msg = '⏻') {
+        log('Parado.');
+        state.run = false;
+        state.stallSince = null;
+        state.silentFail = false;
+        state.apiSuccess = false;
+        state.waitingQueue = false;
+        stopHeartbeat();
+        releaseWakeLock();
+        stopSilentAudio();
+        stopHistoryPolling();
+        state.currentHistoryUuid = null;
+        ui.box.classList.remove('active', 'success', 'failure');
+        ui.txt.textContent = msg;
+        document.title = state.originalTitle;
+    }
+
+    function finish(type) {
+        log(type);
+        state.run = false;
+        stopHeartbeat();
+        releaseWakeLock();
+        stopSilentAudio();
+        stopHistoryPolling();
+        state.currentHistoryUuid = null;
+        ui.box.classList.remove('active');
+        if (type === 'success') {
+            ui.box.classList.add('success'); ui.txt.textContent = 'OK'; document.title = `✅ Sucesso | ${state.originalTitle}`;
+        } else {
+            ui.box.classList.add('failure'); ui.txt.textContent = 'Falha'; document.title = `❌ Falha | ${state.originalTitle}`;
+        }
+    }
+
+    function updateStatus() {
+        const status = `[${state.retry}/${state.max}] Gerando`;
+        ui.txt.textContent = `${state.retry}/${state.max}`;
+        document.title = `${status} | ${state.originalTitle}`;
+    }
+
+    function loop() {
+        if (!state.run) return;
+
+        if (state.lastRoundAt && Date.now() - state.lastRoundAt > 300000) {
+            if (state.currentHistoryUuid) {
+                log(`[BG] Watchdog 5min suprimido — polling ativo para ${state.currentHistoryUuid}`);
+                state.lastRoundAt = Date.now();
+                return;
+            }
+
+            log(`TRAVAMENTO DETECTADO`);
+            if (state.apiSuccess || $(SEL.success) || $(SEL.loading) || $(SEL.queued)) {
+                state.lastRoundAt = Date.now();
+                return;
+            }
+            if (state.retry >= state.max) { finish('failure'); return; }
+            state.retry++;
+            state.lastRoundAt = Date.now();
+            updateStatus();
+            const btn = $(SEL.btn);
+            if (document.hidden) log(`[BG] 🔁 Watchdog 5min disparado em 2º plano — tentativa ${state.retry}/${state.max}`);
+            if (btn && !btn.disabled) btn.click();
+            return;
+        }
+
+        if (state.waitingQueue) {
+            return;
+        }
+
+        if (checkAndBypassCloudflare()) { state.stallSince = null; return; }
+
+        const errorEl   = $(SEL.error),
+              loadingEl = $(SEL.loading),
+              queuedEl  = $(SEL.queued),
+              overlayEl = $(SEL.overlay),
+              modalEl   = $(SEL.modal),
+              successEl = $(SEL.success),
+              btn       = $(SEL.btn);
+
+        if (state.apiSuccess) {
+            state.apiSuccess = false;
+            if ($(SEL.success)) { state.stallSince = null; finish('success'); return; }
+            state.stallSince = null;
+            return;
+        }
+
+        if (state.silentFail) {
+            state.silentFail = false;
+            state.stallSince = null;
+            if (state.retry >= state.max) { finish('failure'); return; }
+            state.retry++;
+            state.lastRoundAt = Date.now();
+            updateStatus();
+            const btn = $(SEL.btn);
+            if (btn && !btn.disabled) btn.click();
+            return;
+        }
+
+        if (successEl) { state.stallSince = null; finish('success'); return; }
+
+        if (loadingEl || queuedEl || overlayEl || modalEl) {
+            state.stallSince = null;
+            return;
+        }
+
+        if (errorEl) {
+            state.stallSince = null;
+            if (state.retry >= state.max) { finish('failure'); return; }
+            state.retry++;
+            state.lastRoundAt = Date.now();
+            updateStatus();
+            if (document.hidden) log(`[BG] 🔁 Erro DOM detectado em 2º plano — nova tentativa ${state.retry}/${state.max}`);
+            if (btn && !btn.disabled) btn.click();
+            return;
+        }
+
+        if (btn && !btn.disabled && (btn.textContent || '').includes('Generate with Grok')) {
+            state.stallSince = null;
+            btn.click();
+            return;
+        }
+
+        if (!state.stallSince) {
+            state.stallSince = Date.now();
+            return;
+        }
+
+        if (Date.now() - state.stallSince >= STALL_TIMEOUT_MS) {
+            state.stallSince = null;
+            if (state.retry >= state.max) { finish('failure'); return; }
+            state.retry++;
+            state.lastRoundAt = Date.now();
+            updateStatus();
+            if (document.hidden) log(`[BG] 🔁 Stall timeout em 2º plano — forçando tentativa ${state.retry}/${state.max}`);
+            if (btn && !btn.disabled) btn.click();
+        }
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupUI); else setupUI();
+})();
