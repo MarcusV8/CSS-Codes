@@ -1,54 +1,60 @@
-@-moz-document domain("userstyles.world") {
-     /* Userstyles World*/
-     
-     :root {
-          --C1: #191724;
-          --C2: #232136;
-          --C3: #393552;
-          --C4: #E0DEF4;
-          --B1: 1px solid var(--C4);
-          --BR1: 15px;
-          --BR2: 5px;
-          --bg-3: var(--C1);
-     }
-     * {
-          color: var(--C4) !important;
-     }
-     html body {
-          background: var(--C2);
-     }
-     input,
-     textarea,
-     select {
-          background-color: var(--C1);
-          border: var(--B1) ;
-          border-radius: var(--BR1);
-     }
-     table {
-          background: var(--C3);
-     }
-     /* Main Pages */
-     .navbar,
-     .card,
-     .Footer {
-          background: var(--C3);
-     }
-     .Box,
-     .btn,
-     .btn.primary,
-     .Pagination,
-      pre {
-          background-color: var(--C1);
-     }
-     .icon.flex.ai\:c,
-     .spoiler {
-          background: var(--C2);
-     }
-     /* Login and other sections */
-     .Form-box {
-          background: var(--C1);
-     }
-     form:not(.Form), .form-wrapper:not(.Form) {
-          background: var(--C3);
-     }
+/* === UserStyles.world === */
+
+:root {
+  --C1: #191724 !important;
+  --C2: #232136 !important;
+  --C3: #393552 !important;
+  --C4: #E0DEF4 !important;
+  --B1: 1px solid var(--C4) !important;
+  --BR1: 15px !important;
+  --BR2: 5px !important;
+  --bg-3: var(--C1) !important;
+}
+
+* {
+  color: var(--C4) !important;
+}
+
+html body {
+  background: var(--C2) !important;
+}
+
+input,
+textarea,
+select {
+  background-color: var(--C1) !important;
+  border: var(--B1) !important;
+  border-radius: var(--BR1) !important;
+}
+
+table {
+  background: var(--C3) !important;
+}
+
+.navbar,
+.card,
+.Footer {
+  background: var(--C3) !important;
+}
+
+.Box,
+.btn,
+.btn.primary,
+.Pagination,
+pre {
+  background-color: var(--C1) !important;
+}
+
+.icon.flex.ai\:c,
+.spoiler {
+  background: var(--C2) !important;
+}
+
+.Form-box {
+  background: var(--C1) !important;
+}
+
+form:not(.Form),
+.form-wrapper:not(.Form) {
+  background: var(--C3) !important;
 }
