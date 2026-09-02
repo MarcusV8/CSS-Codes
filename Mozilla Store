@@ -1,0 +1,186 @@
+/* === Mozilla Add-ons (addons.mozilla.org) === */
+
+:root {
+  --C1: #191724 !important;
+  --C2: #232136 !important;
+  --C3: #393552 !important;
+  --C4: #E0DEF4 !important;
+  --B1: 1px solid var(--C1) !important;
+  --BR1: 15px !important;
+  --BR2: 5px !important;
+}
+
+* {
+  color: var(--C4) !important;
+}
+
+body {
+  background-color: var(--C2) !important;
+}
+
+input,
+textarea,
+select {
+  background-color: var(--C1) !important;
+  border: 1px solid var(--C4) !important;
+  border-radius: 5px !important;
+}
+
+.LandingPage-header,
+.Card-header,
+.Card-contents,
+.AddonsCard--horizontal .Card-contents {
+  background: var(--C3) !important;
+  border: 2px solid var(--C1) !important;
+}
+
+.Page-content {
+  background-color: var(--C2) !important;
+}
+
+.DropdownMenu-items {
+  background-color: var(--C3) !important;
+  border: 1px solid var(--C1) !important;
+}
+
+.Header,
+.Footer {
+  background-color: var(--C3) !important;
+}
+
+.ReportAbuseButton,
+.Button.Button--action.ContributeCard-button.Button--puffy {
+  background-color: var(--C1) !important;
+  border-radius: 15px !important;
+}
+
+.SecondaryHero-module {
+  background: #1f2536 !important;
+}
+
+.SecondaryHero-module-icon {
+  filter: invert(90%) !important;
+}
+
+.CardList ul > li {
+  background: var(--C1) !important;
+  border-radius: 15px !important;
+  border: 1px solid var(--C4) !important;
+}
+
+.AddonsCard--horizontal ul.AddonsCard-list .SearchResult-wrapper:focus,
+.AddonsCard--horizontal ul.AddonsCard-list .SearchResult-wrapper:hover {
+  background: #283046 !important;
+}
+
+.HomeHeroGuides-section .Card-contents {
+  background-color: var(--C3) !important;
+}
+
+.HomeHeroGuides-sections .Hero-name-HomeHeroGuides {
+  border-color: var(--B1) !important;
+}
+
+.MetadataCard {
+  background-color: var(--C1) !important;
+}
+
+.Card-footer-link,
+.Card-footer-text,
+.Card-footer {
+  background: var(--C3) !important;
+  border: var(--B1) !important;
+}
+
+.ShowMoreCard-contents::after {
+  background: -webkit-gradient(
+    linear,
+    left top,
+    left bottom,
+    from(rgba(255, 255, 255, 0)),
+    to(#1f2536)
+  ) !important;
+  background: linear-gradient(rgba(255, 255, 255, 0), #1f2536) !important;
+}
+
+.AddonsByAuthorsCard.AddonsCard--horizontal .Card-contents .AddonsCard-list {
+  background: var(--C3) !important;
+}
+
+[dir="ltr"] .PermissionsCard-list li .Icon {
+  filter: invert(90%) !important;
+}
+
+.Select {
+  background-color: var(--C3) !important;
+}
+
+.Notice-generic,
+.Notice-genericWarning {
+  background-color: var(--C1) !important;
+}
+
+.AutoSearchInput-icon-magnifying-glass {
+  filter: invert(90%) !important;
+}
+
+.AutoSearchInput-suggestions-list {
+  background-color: var(--C3) !important;
+  border: var(--B1) !important;
+}
+
+.AddonRecommendations.AddonsCard--horizontal ul.AddonsCard-list .SearchResult:hover {
+  background-color: var(--C3) !important;
+}
+
+.PromotedBadge-label--recommended {
+  color: #df671d !important;
+}
+
+.Button--light:not(.Button--disabled),
+.Button--light.Button--micro:not(.Button--disabled) {
+  background-color: var(--C1) !important;
+}
+
+.Button--light:not(.Button--disabled):hover,
+.Button--light.Button--micro:not(.Button--disabled):hover {
+  background: var(--C1) !important;
+}
+
+.IconStar-svg g {
+  fill: #ffe900 !important;
+}
+
+.Paginate {
+  background-color: var(--C1) !important;
+}
+
+.Paginate .Button.Paginate-item:hover,
+.Paginate .Button.Paginate-item:active {
+  background-color: #1d2232 !important;
+}
+
+.LanguageTools-header-row {
+  background-color: var(--C3) !important;
+}
+
+.LanguageTools-table.responsiveTable tbody tr:nth-child(2n) {
+  background-color: var(--C3) !important;
+}
+
+.StaticAddonCard {
+  background-color: var(--C3) !important;
+  box-shadow: 0 2px 6px var(--C1) !important;
+}
+
+.blogpost-nav {
+  background: #060f1e !important;
+}
+
+.cls-1 {
+  stroke: var(--C4) !important;
+}
+
+.blogpost-nav li:last-of-type {
+  box-shadow: -1px 0 0 0 #999 !important;
+}
