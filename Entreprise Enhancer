@@ -1,0 +1,381 @@
+// ==UserScript==
+// @name         Entreprise Enhancer
+// @namespace    http://tampermonkey.net/
+// @version      7.60
+// @description  Automated Video Generation with Auto-Submit & Scroll Fixes (Clean)
+// @author       You
+// @match        https://business.gemini.google/*
+// @grant        none
+// @run-at       document-start
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    const UI_CSS = "#controlWrapper{position:fixed;bottom:0;right:0;z-index:9998;padding:25px;cursor:pointer;font-family:sans-serif}#autoRetryIndicatorBG{position:fixed;bottom:10px;right:10px;z-index:9999;width:50px;height:50px;border-radius:50%;background-color:#393552;box-shadow:0 4px 8px rgba(0,0,0,.2);transition:all .3s;opacity:0.6;border:2px solid transparent}#statusText{position:fixed;bottom:10px;right:10px;z-index:10000;width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#E0DEF4;user-select:none;text-align:center;pointer-events:none;line-height:normal}#autoRetryIndicatorBG.active{opacity:1;background-color:#191724;border:2px solid #eb6f92}#retryInput{display:none;position:fixed;bottom:10px;right:10px;z-index:10001;width:50px;height:50px;border-radius:50%;border:2px solid #eb6f92;background-color:#232136;color:#E0DEF4;text-align:center;font-size:14px;font-weight:700;outline:0;padding:0;margin:0}#retryInput::placeholder{color:rgba(224, 222, 244, 0.3);font-size:10px}";
+    const GLOBAL_THEME_CSS = `:host, :root { --C1:#191724!important; --C2:#232136!important; --C3:#393552!important; --C4:#E0DEF4!important; } * { color: var(--C4) !important; } .disclaimer, .suggestion-pills-container, [data-test-id="disclaimer-text"] { display:none !important; } .question-wrapper { max-width: 300pc !important; } .nav-panel, mat-sidenav { background: var(--C3) !important; } body, .body { background-color: var(--C1) !important; color: var(--C4) !important; } md-ripple, .free-trial__chip { background: var(--C1) !important; } .tile .tile-content, .tile, .ucs-standalone-header, ucs-chat-landing { background: var(--C2) !important; } form .form-elements, .question-wrapper, .popup, .tools-selector-menu, .menu, .items, .free-trial-tooltip, .sources-panel, #data-sources, md-item { background: var(--C3) !important; }`;
+    const EXCEPTION_CSS = `md-ripple { background: transparent !important; }`;
+
+    const ThemeEngine = {
+        sheet: new CSSStyleSheet(),
+        exceptionSheet: new CSSStyleSheet(),
+        isOn: localStorage.getItem('EE_Theme_On') === 'true',
+        shadowRoots: new Set(),
+        init() {
+            this.sheet.replaceSync(GLOBAL_THEME_CSS);
+            this.exceptionSheet.replaceSync(EXCEPTION_CSS);
+            this.refreshAll();
+            const originalAttachShadow = Element.prototype.attachShadow;
+            const self = this;
+            Element.prototype.attachShadow = function(init) {
+                const root = originalAttachShadow.call(this, init);
+                self.shadowRoots.add(root);
+                self.applyToRoot(root);
+                return root;
+            };
+            setInterval(() => { if(this.isOn) this.refreshAll(); }, 1000);
+            this.scanExisting();
+        },
+        toggle() {
+            this.isOn = !this.isOn;
+            localStorage.setItem('EE_Theme_On', this.isOn);
+            this.refreshAll();
+        },
+        refreshAll() {
+            this.applyToRoot(document);
+            this.shadowRoots.forEach(root => this.applyToRoot(root));
+        },
+        applyToRoot(root) {
+            try {
+                root.adoptedStyleSheets = root.adoptedStyleSheets.filter(s => s !== this.sheet && s !== this.exceptionSheet);
+                if (this.isOn) {
+                    root.adoptedStyleSheets = [...root.adoptedStyleSheets, this.sheet];
+                    if (root.host) {
+                        const tag = root.host.tagName.toLowerCase();
+                        let applyFix = false;
+                        if (tag === 'md-menu-item') applyFix = true;
+                        if (tag === 'md-outlined-button') {
+                            const parentHost = root.host.getRootNode().host;
+                            if (parentHost && parentHost.tagName.toLowerCase() === 'ucs-prompt-card') applyFix = true;
+                            if (root.host.closest('ucs-prompt-card')) applyFix = true;
+                        }
+                        if (applyFix) root.adoptedStyleSheets = [...root.adoptedStyleSheets, this.exceptionSheet];
+                    }
+                }
+            } catch (e) { }
+        },
+        scanExisting() {
+            const all = document.querySelectorAll('*');
+            for (let el of all) { if (el.shadowRoot) { this.shadowRoots.add(el.shadowRoot); this.applyToRoot(el.shadowRoot); } }
+        }
+    };
+    ThemeEngine.init();
+
+    document.addEventListener('keydown', (e) => {
+        if (e.shiftKey && e.key.toLowerCase() === 'u') {
+            e.preventDefault(); e.stopImmediatePropagation(); ThemeEngine.toggle();
+        }
+    });
+
+    const PATHS = {
+        base: "ucs-standalone-app >>> ucs-results >>> ucs-conversation",
+        prompt: "ucs-standalone-app >>> ucs-results >>> ucs-conversation >>> div.turn.last ucs-fast-markdown >>> .markdown-document",
+        generatingClass: "animate-header",
+        successTag: "ucs-video-player",
+        retryTag: "md-filled-button"
+    };
+
+    const state = {run:false,currentAttempt:1,maxAttempts:1,processing:false,isCoolingDown:false,multiMax:0,multiCount:0,multiMode:false,inputStep:1};
+    const ui = { wrap: document.createElement('div'), bg: document.createElement('div'), txt: document.createElement('div'), inp: document.createElement('input') };
+    let originalTitle = document.title;
+    let observer, debounce, heartbeat, audioCtx;
+
+    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+    function beep() { initAudio(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.value = 1; gain.gain.value = 0.0001; osc.start(); setTimeout(() => osc.stop(), 500); }
+
+    function findElementDeep(selector, root = document) {
+        let found = null;
+        const search = (current) => {
+            if (found) return;
+            if (current.querySelector && current.querySelector(selector)) found = current.querySelector(selector);
+            if (found) return;
+            const children = current.children || [];
+            for (const child of children) { if (child.shadowRoot) search(child.shadowRoot); search(child); }
+        };
+        search(root);
+        return found;
+    }
+
+    function queryDeepAll(path) {
+        const parts = path.split(' >>> ');
+        let currentRoots = [document];
+        for (let i = 0; i < parts.length; i++) {
+            let nextRoots = [];
+            for (let root of currentRoots) {
+                const elements = Array.from(root.querySelectorAll(parts[i]));
+                for (let el of elements) {
+                    if (i === parts.length - 1) nextRoots.push(el);
+                    else if (el.shadowRoot) nextRoots.push(el.shadowRoot);
+                }
+            }
+            currentRoots = nextRoots;
+        }
+        return currentRoots;
+    }
+
+    function forceScroll() {
+        try {
+            const scrollers = queryDeepAll('ucs-standalone-app >>> ucs-results >>> .chat-mode-scroller');
+            if (scrollers && scrollers.length > 0) {
+                const sc = scrollers[scrollers.length - 1];
+                sc.scrollTop = sc.scrollHeight + 1000;
+            }
+            window.scrollTo(0, document.body.scrollHeight);
+        } catch(e) {}
+    }
+
+    function triggerMirrorSubmit() {
+        setTimeout(() => {
+            const sendBtnMatches = queryDeepAll('ucs-standalone-app >>> ucs-results >>> ucs-search-bar >>> md-icon-button.send-button');
+            const sendBtn = sendBtnMatches.length > 0 ? sendBtnMatches[sendBtnMatches.length - 1] : (findElementDeep('.send-button') || findElementDeep('button[aria-label*="Send"]') || findElementDeep('button[aria-label*="Enviar"]'));
+            if (sendBtn && !sendBtn.disabled) sendBtn.click();
+        }, 600);
+    }
+
+    function getPromptText() {
+        const matches = queryDeepAll(PATHS.prompt);
+        if (matches.length > 0) {
+            const el = matches[matches.length - 1];
+            return el.innerText || el.textContent || "";
+        }
+        return "";
+    }
+
+    function getBase() {
+        const parts = PATHS.base.split(' >>> ');
+        let el = document.querySelector(parts[0]);
+        for (let i = 1; i < parts.length; i++) { if (!el || !el.shadowRoot) return null; el = el.shadowRoot.querySelector(parts[i]); }
+        return el;
+    }
+
+    function deepScan(root) {
+        let findings = { isGenerating: false, hasVideo: false, retryBtn: null };
+        if (!root) return findings;
+        let queue = [root];
+        while (queue.length > 0) {
+            let node = queue.shift();
+            if (node.classList && node.classList.contains(PATHS.generatingClass)) findings.isGenerating = true;
+            if (node.tagName && node.tagName.toLowerCase() === PATHS.successTag) findings.hasVideo = true;
+            if (node.tagName && node.tagName.toLowerCase() === PATHS.retryTag) {
+                const inner = node.innerHTML || "";
+                if (!inner.includes("play_arrow") && !inner.includes("pause")) findings.retryBtn = node;
+            }
+            if (node.shadowRoot) Array.from(node.shadowRoot.children).forEach(c => queue.push(c));
+            if (node.children) Array.from(node.children).forEach(c => queue.push(c));
+        }
+        return findings;
+    }
+
+    async function triggerWorkaroundReprompt() {
+        const textToCopy = getPromptText();
+        if (!textToCopy) return false;
+
+        const editorMatches = queryDeepAll('ucs-standalone-app >>> ucs-results >>> ucs-search-bar >>> ucs-prosemirror-editor >>> .ProseMirror');
+        const editor = editorMatches.length > 0 ? editorMatches[editorMatches.length - 1] : findElementDeep('.ProseMirror');
+        if (!editor) return false;
+
+        editor.focus();
+        document.execCommand('selectAll', false, null);
+        document.execCommand('insertText', false, textToCopy);
+
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+        editor.dispatchEvent(new Event('change', { bubbles: true }));
+        const spaceEvt = new KeyboardEvent('keydown', { key: ' ', code: 'Space', keyCode: 32, bubbles: true });
+        editor.dispatchEvent(spaceEvt);
+
+        await new Promise(r => setTimeout(r, 1500));
+
+        const sendBtnMatches = queryDeepAll('ucs-standalone-app >>> ucs-results >>> ucs-search-bar >>> md-icon-button.send-button');
+        const sendBtn = sendBtnMatches.length > 0 ? sendBtnMatches[sendBtnMatches.length - 1] : (findElementDeep('.send-button') || findElementDeep('button[aria-label*="Send"]') || findElementDeep('button[aria-label*="Enviar"]'));
+
+        if (sendBtn) {
+            const btnText = (sendBtn.getAttribute('aria-label') || "").toLowerCase();
+            if (btnText.includes('stop') || btnText.includes('parar')) return false;
+
+            if (sendBtn.disabled) {
+                sendBtn.disabled = false;
+                sendBtn.removeAttribute('disabled');
+            }
+            sendBtn.click();
+            setTimeout(() => {
+                editor.focus();
+                const enterEvt = {key:'Enter', code:'Enter', keyCode:13, bubbles:true, composed:true};
+                editor.dispatchEvent(new KeyboardEvent('keydown', enterEvt));
+                editor.dispatchEvent(new KeyboardEvent('keyup', enterEvt));
+            }, 150);
+            return true;
+        } else {
+            editor.focus();
+            const enterEvt = {key:'Enter', code:'Enter', keyCode:13, bubbles:true, composed:true};
+            editor.dispatchEvent(new KeyboardEvent('keydown', enterEvt));
+            editor.dispatchEvent(new KeyboardEvent('keyup', enterEvt));
+            return true;
+        }
+    }
+
+    function handleSuccess(turnEl) {
+        if (turnEl.dataset.eeProcessed === "true") return;
+        turnEl.dataset.eeProcessed = "true";
+        state.multiCount++;
+
+        if (state.multiMode && state.multiCount < state.multiMax) {
+            state.currentAttempt = 1; updateUI(); document.title = "[Próximo...]";
+            state.processing = true;
+            state.isCoolingDown = true;
+
+            triggerWorkaroundReprompt().then(sent => {
+                if (sent) {
+                    setTimeout(() => {
+                        state.processing = false;
+                        state.isCoolingDown = false;
+                        forceScroll();
+                    }, 8000);
+                } else { reset('REPROMPT_ERR'); }
+            });
+        } else {
+            document.title = "[Sucesso]"; beep(); setTimeout(() => reset('FIM'), 2000);
+        }
+    }
+
+    function handleCorrectionAttempt() {
+        if (state.isCoolingDown) return;
+        state.processing = true;
+        state.isCoolingDown = true;
+        document.title = `[${state.currentAttempt}/${state.maxAttempts}] Erro...`;
+        beep();
+
+        setTimeout(async () => {
+             const sent = await triggerWorkaroundReprompt();
+             if (sent) {
+                 setTimeout(() => {
+                     state.processing = false;
+                     state.isCoolingDown = false;
+                     forceScroll();
+                 }, 8000);
+             } else { reset('WORKAROUND_FAIL'); }
+        }, 1000);
+    }
+
+    function check() {
+        if (!state.run || state.processing) return;
+
+        const conv = getBase();
+        if (!conv || !conv.shadowRoot) return;
+
+        const lastTurn = conv.shadowRoot.querySelector("div.turn.last");
+        if (!lastTurn) return;
+
+        const scanResult = deepScan(lastTurn);
+
+        if (scanResult.hasVideo) { handleSuccess(lastTurn); return; }
+
+        if (scanResult.retryBtn) {
+            if (state.currentAttempt === 1) {
+                state.currentAttempt++;
+                if (!state.multiMode) updateUI();
+                try {
+                    scanResult.retryBtn.click();
+                    state.processing = true;
+                    setTimeout(() => {
+                        state.processing = false;
+                        forceScroll();
+                    }, 8000);
+                } catch (e) { handleCorrectionAttempt(); }
+            } else if (state.currentAttempt <= state.maxAttempts) {
+                state.currentAttempt++;
+                if (!state.multiMode) updateUI();
+                handleCorrectionAttempt();
+            } else {
+                if (state.multiMode) reset('BATCH_FAIL');
+                else { document.title = "[Falha Final]"; reset('MAX_ATTEMPTS'); }
+                beep();
+            }
+            return;
+        }
+        if (scanResult.isGenerating) {
+            document.title = `[${state.currentAttempt}/${state.maxAttempts}] Gerando`;
+            forceScroll();
+            return;
+        }
+    }
+
+    function reset(msg='⏻') {
+        state.run = false; state.processing = false;
+        ui.txt.textContent = msg; ui.bg.classList.remove('active');
+        if (observer) observer.disconnect();
+        if (heartbeat) clearInterval(heartbeat);
+        document.title = originalTitle;
+    }
+
+    function start(preserveMulti = false) {
+        if (!originalTitle.startsWith("[")) originalTitle = document.title;
+        state.run = true; state.currentAttempt = 1;
+        if (state.multiMode) {
+            state.multiCount = 0;
+            if (!preserveMulti) state.multiMax = 0;
+        } else {
+            state.multiMax = 0; state.multiCount = 0;
+        }
+        ui.bg.classList.add('active'); updateUI();
+        observer = new MutationObserver(() => { clearTimeout(debounce); debounce = setTimeout(check, 500); });
+        observer.observe(document.body, { childList: true, subtree: true });
+        heartbeat = setInterval(check, 3000); check();
+    }
+
+    function updateUI() {
+        ui.txt.textContent = state.multiMode ? `${state.multiCount+1}/${state.multiMax}` : `${state.currentAttempt}/${state.maxAttempts}`;
+    }
+
+    function loadUI() {
+        const style = document.createElement('style');
+        style.textContent = UI_CSS;
+        document.head.appendChild(style);
+        ui.wrap.id = 'controlWrapper'; ui.bg.id = 'autoRetryIndicatorBG'; ui.txt.id = 'statusText'; ui.txt.textContent = '⏻';
+        ui.inp.id = 'retryInput'; ui.inp.type = 'text';
+        ui.wrap.append(ui.bg, ui.txt, ui.inp);
+        document.body.appendChild(ui.wrap);
+        ui.wrap.onclick = (e) => {
+            if (e.target === ui.inp) return;
+            if (state.run) reset(); else { state.multiMode = false; ui.txt.style.display = 'none'; ui.inp.style.display = 'flex'; ui.inp.value = ''; ui.inp.placeholder = '#'; ui.inp.focus(); }
+        };
+        ui.wrap.oncontextmenu = (e) => {
+            e.preventDefault();
+            if (state.run) reset();
+            else {
+                state.multiMode = true; state.inputStep = 1;
+                ui.txt.style.display = 'none'; ui.inp.style.display = 'flex'; ui.inp.value = ''; ui.inp.placeholder = 'Videos (1-20)'; ui.inp.focus();
+            }
+        };
+        ui.inp.onblur = () => { ui.inp.style.display = 'none'; ui.txt.style.display = 'flex'; };
+        ui.inp.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                let val = parseInt(ui.inp.value, 10);
+                if (isNaN(val) || val <= 0) return;
+                if (state.multiMode) {
+                    if (state.inputStep === 1) {
+                        state.multiMax = Math.min(val, 20); state.inputStep = 2;
+                        ui.inp.value = ''; ui.inp.placeholder = 'Tentativas?';
+                    } else {
+                        state.maxAttempts = val; state.inputStep = 1;
+                        ui.inp.blur(); start(true);
+                        triggerMirrorSubmit();
+                    }
+                } else {
+                    state.maxAttempts = val; ui.inp.blur(); start(false);
+                    triggerMirrorSubmit();
+                }
+            }
+        };
+    }
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', loadUI); } else { loadUI(); }
+})();
