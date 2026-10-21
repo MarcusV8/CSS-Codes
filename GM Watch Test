@@ -1,0 +1,97 @@
+// ==UserScript==
+// @name         GM Watch Test [v2.8]
+// @namespace    http://tampermonkey.net/
+// @version      2.8
+// @match        https://gemini.google.com/*
+// @grant        none
+// @run-at       document-start
+// ==/UserScript==
+(function () {
+    'use strict';
+
+    const log = (...a) => console.log(`[GMW][${new Date().toTimeString().slice(0,12)}]`, ...a);
+
+    const _XHROpen = XMLHttpRequest.prototype.open;
+    const _XHRSend = XMLHttpRequest.prototype.send;
+
+    XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+        this._gieUrl = url || '';
+        return _XHROpen.call(this, method, url, ...rest);
+    };
+
+    XMLHttpRequest.prototype.send = function (body, ...rest) {
+        const url     = this._gieUrl || '';
+        const bodyStr = typeof body === 'string' ? body : '';
+
+        if (url.includes('StreamGenerate') && bodyStr.includes('f.req')) {
+            const xhr = this;
+            log('[XHR] StreamGenerate interceptado');
+
+            xhr.addEventListener('load', function () {
+                const status = xhr.status;
+                const text   = xhr.responseText || '';
+                log(`[GM] HTTP ${status} — ${text.length}b`);
+
+                if (status !== 200) return;
+
+                const imgUrls = extractImageUrls(text);
+                if (!imgUrls.length) { log('[GM] Sem imagem na resposta'); return; }
+
+                setTimeout(() => {
+                    const domImg = document.querySelector(
+                        'generated-image img, single-image img, .image-gallery img, img[alt^="Generated"]'
+                    );
+                    if (domImg) {
+                        log('[GM] Imagem no DOM — sucesso normal, ignorando');
+                        return;
+                    }
+                    log('[GM] ✅ Imagem bloqueada pós-geração — exibindo miniatura');
+                    showThumbnails(imgUrls);
+                }, 3000);
+            });
+        }
+
+        return _XHRSend.call(this, body, ...rest);
+    };
+
+    function extractImageUrls(text) {
+        const urls = [];
+        let m;
+
+        const lhRe  = /https:\/\/lh3\.googleusercontent\.com\/gg-dl\/[^"\\,\s\]]+/g;
+        while ((m = lhRe.exec(text)) !== null)
+            urls.push(m[0]);
+
+        const falRe = /https?:\/\/[^"\\,\s\]]*fal\.media[^"\\,\s\]]*/g;
+        while ((m = falRe.exec(text)) !== null)
+            urls.push(m[0]);
+
+        return [...new Set(urls)].slice(0, 4);
+    }
+
+    let thumbContainer = null;
+    function showThumbnails(urls) {
+        if (!thumbContainer || !document.body.contains(thumbContainer)) {
+            thumbContainer = document.createElement('div');
+            thumbContainer.style.cssText = 'position:fixed;bottom:70px;left:10px;z-index:10001;background:#191724;border:1px solid #393552;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;width:140px;box-shadow:0 4px 15px rgba(0,0,0,0.4);';
+            const close = document.createElement('div');
+            close.textContent = '✕';
+            close.style.cssText = 'position:absolute;top:6px;right:8px;cursor:pointer;font-size:13px;color:#908caa;';
+            close.onclick = () => { thumbContainer.remove(); thumbContainer = null; };
+            const label = document.createElement('div');
+            label.textContent = 'Miniaturas';
+            label.style.cssText = 'font-size:11px;color:#908caa;margin-bottom:4px;font-weight:600;padding-right:16px;';
+            thumbContainer.append(close, label);
+            document.body.appendChild(thumbContainer);
+        }
+        urls.forEach(url => {
+            const img = document.createElement('img');
+            img.src = url;
+            img.style.cssText = 'width:100%;border-radius:6px;cursor:pointer;border:1px solid #393552;display:block;';
+            img.onclick = () => window.open(url, '_blank');
+            thumbContainer.appendChild(img);
+        });
+    }
+
+    log('[GM] v2.8 ativo');
+})();
