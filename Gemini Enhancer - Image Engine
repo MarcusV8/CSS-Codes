@@ -1,0 +1,459 @@
+// ==UserScript==
+// @name         Gemini Enhancer - Image Engine
+// @namespace    http://tampermonkey.net/
+// @version      7.3-slim-network-bypass
+// @description  Image generation retry engine.
+// @author       MarcusV8
+// @match        https://gemini.google.com/*
+// @grant        GM_addStyle
+// @grant        GM_xmlhttpRequest
+// @grant        unsafeWindow
+// @connect      contribution.usercontent.google.com
+// @connect      lh3.googleusercontent.com
+// @connect      gemini.google.com
+// @run-at       document-start
+// @icon         https://i.redd.it/zl9bvu94ui3f1.png
+// ==/UserScript==
+
+(function () {
+    'use strict';
+
+    const win = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
+    const originalTitle2 = document.title;
+
+    try {
+        Object.defineProperty(Document.prototype, 'hidden', { get: () => false, configurable: true });
+        Object.defineProperty(Document.prototype, 'webkitHidden', { get: () => false, configurable: true });
+        Object.defineProperty(Document.prototype, 'visibilityState', { get: () => 'visible', configurable: true });
+        Object.defineProperty(Document.prototype, 'webkitVisibilityState', { get: () => 'visible', configurable: true });
+        document.hasFocus = () => true;
+        const blockVisibility = (e) => { e.stopImmediatePropagation(); e.preventDefault(); };
+        document.addEventListener('visibilitychange', blockVisibility, true);
+        document.addEventListener('webkitvisibilitychange', blockVisibility, true);
+    } catch (e) {}
+
+    let isFakeFocus = false;
+    setInterval(() => {
+        isFakeFocus = true;
+        document.dispatchEvent(new Event('visibilitychange', { bubbles: true }));
+        window.dispatchEvent(new Event('focus', { bubbles: true }));
+        document.dispatchEvent(new Event('focus', { bubbles: true }));
+        isFakeFocus = false;
+    }, 2000);
+
+    let silentAudio = null;
+    function initAudioWakeLock() {
+        if (!silentAudio) {
+            silentAudio = win.document.createElement('audio');
+            silentAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+            silentAudio.loop = true;
+            silentAudio.volume = 0.0001;
+            document.body.appendChild(silentAudio);
+        }
+        if (silentAudio.paused) {
+            silentAudio.play().catch(() => {});
+        }
+    }
+
+    const iState2 = {
+        run: false, retry: 1, max: 0,
+        lastClick: 0, genStartTime: 0,
+        finalState: null, batchMode: false,
+        targetSuccess: 1, currentSuccess: 0,
+        inputStage: 0, tempTarget: 0,
+        imgFound: false, processed: false,
+        bypassMode: false
+    };
+
+    let isInputActive = false;
+
+    const ui2 = {
+        wrap: document.createElement('div'),
+        bg: document.createElement('div'),
+        txt: document.createElement('div'),
+        inp: document.createElement('input')
+    };
+
+    let engineTimer2 = null;
+
+    GM_addStyle(`
+        #controlWrapper2{position:fixed;bottom:100px;left:0;z-index:9998;padding:25px;cursor:pointer}
+        #autoRetryIndicatorBG2{position:fixed;bottom:110px;left:10px;z-index:9999;width:50px;height:50px;border-radius:50%;background-color:#393552;box-shadow:0 4px 8px rgba(0,0,0,.2);transition:all .3s;opacity:0;border:2px solid transparent}
+        #statusText2{position:fixed;bottom:110px;left:10px;z-index:10000;width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-family:sans-serif;font-size:16px;font-weight:700;color:#E0DEF4;user-select:none;text-align:center;pointer-events:none;line-height:normal}
+        #controlWrapper2:hover #autoRetryIndicatorBG2,#autoRetryIndicatorBG2.active{opacity:1}
+        #controlWrapper2:hover #autoRetryIndicatorBG2{background-color:#191724!important}
+        #autoRetryIndicatorBG2.active{background-color:#191724;border:2px solid #E0DEF4!important}
+        #autoRetryIndicatorBG2.ok{background:#1a3a1a!important;border-color:#3dba5e!important;opacity:1!important}
+        #autoRetryIndicatorBG2.fail{background:#3a1a1a!important;border-color:#eb4646!important;opacity:1!important}
+        #retryInput2{display:none;position:fixed;bottom:110px;left:10px;z-index:10001;width:50px;height:50px;border-radius:50%;border:2px solid #908caa;background-color:#393552;color:#E0DEF4;text-align:center;font-size:14px;font-weight:700;outline:0;padding:0;margin:0}
+        @keyframes imgPulse2{0%{box-shadow:0 0 0 0 rgba(246,193,119,0.4)}70%{box-shadow:0 0 0 12px rgba(246,193,119,0)}100%{box-shadow:0 0 0 0 rgba(246,193,119,0)}}
+        #autoRetryIndicatorBG2.generating{border-color:#f6c177!important;animation:imgPulse2 1.5s infinite;opacity:1!important}
+    `);
+
+    const isFinalImgUrl = (url) => {
+        if (!url) return false;
+        const isGoogleContent = url.includes('googleusercontent.com') || url.includes('contribution.usercontent.google.com');
+        const isFinalRes = url.includes('=s1024') || url.includes('=rj') || url.endsWith('.png') || url.endsWith('.jpg');
+        return isGoogleContent && isFinalRes;
+    };
+
+    (() => {
+        const origXHROpen = win.XMLHttpRequest.prototype.open;
+        const origXHRSend = win.XMLHttpRequest.prototype.send;
+        const origXHRSetHeader = win.XMLHttpRequest.prototype.setRequestHeader;
+        const origFetch = win.fetch;
+
+        win.XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+            this._giUrl = url || '';
+            this._giMethod = method || 'POST';
+            this._giHeaders = {};
+            if (isFinalImgUrl(url) && iState2.run && !iState2.processed) {
+                iState2.imgFound = true;
+                iState2.processed = true;
+                iState2.bypassMode = false;
+                setTimeout(iOnSuccess2, 500);
+            }
+            return origXHROpen.call(this, method, url, ...rest);
+        };
+
+        win.XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
+            try { if (this._giHeaders) this._giHeaders[name] = value; } catch (_) {}
+            return origXHRSetHeader.call(this, name, value);
+        };
+
+        win.XMLHttpRequest.prototype.send = function (body) {
+            if (this._giUrl?.includes('StreamGenerate')) {
+                try {
+                    win.__giLastStreamGenerateReq = {
+                        method: this._giMethod || 'POST',
+                        url: this._giUrl,
+                        headers: Object.assign({}, this._giHeaders || {}),
+                        body: typeof body === 'string' ? body : null,
+                        capturedAt: Date.now()
+                    };
+                } catch (_) {}
+
+                this.addEventListener('load', function() {
+                    if (iState2.run && !iState2.processed) {
+                        const respText = this.responseText || '';
+                        if (respText.length > 200 && !respText.includes('googleusercontent.com') && !respText.includes('gg-dl')) {
+                            iState2.processed = true;
+                            iOnFail2();
+                        }
+                    }
+                });
+            }
+            return origXHRSend.apply(this, arguments);
+        };
+
+        win.fetch = function(input, init) {
+            const url = typeof input === 'string' ? input : input?.url;
+            if (isFinalImgUrl(url) && iState2.run && !iState2.processed) {
+                iState2.imgFound = true;
+                iState2.processed = true;
+                iState2.bypassMode = false;
+                setTimeout(iOnSuccess2, 500);
+            }
+            return origFetch.apply(this, arguments);
+        };
+    })();
+
+    win.giReplayLastRequest = function () {
+        const req = win.__giLastStreamGenerateReq;
+        if (!req) return;
+        iState2.bypassMode = true;
+        try {
+            GM_xmlhttpRequest({
+                method: req.method || 'POST',
+                url: req.url,
+                headers: req.headers || {},
+                data: req.body,
+                onload: (res) => {
+                    win.__giLastReplayResponseText = res.responseText || '';
+                    if (iState2.run && !iState2.processed) {
+                        const respText = res.responseText || '';
+                        if (respText.length > 200 && !respText.includes('googleusercontent.com') && !respText.includes('gg-dl')) {
+                            iState2.processed = true;
+                            setTimeout(iOnFail2, 500);
+                        } else if (respText.includes('googleusercontent.com') || respText.includes('gg-dl')) {
+                            iState2.imgFound = true;
+                            iState2.processed = true;
+                            setTimeout(iOnSuccess2, 500);
+                        }
+                    }
+                },
+                onerror: () => {
+                    if (iState2.run && !iState2.processed) {
+                        iState2.processed = true;
+                        setTimeout(iOnFail2, 500);
+                    }
+                }
+            });
+        } catch (_) {}
+    };
+
+    function updateDisplay2() {
+        if (!iState2.run) return;
+        if (iState2.batchMode) {
+            const label = `${iState2.currentSuccess}/${iState2.targetSuccess}`;
+            ui2.txt.textContent = label;
+            document.title = `[${label}] Gerando`;
+        } else {
+            const label = `${iState2.retry}/${iState2.max}`;
+            ui2.txt.textContent = label;
+            document.title = `[${label}] Gerando`;
+        }
+    }
+
+    function triggerSend2() {
+        const sb = document.querySelector('button.send-button.submit, button[data-test-id="send-button"]');
+        if (sb) {
+            sb.disabled = false;
+            sb.removeAttribute('disabled');
+            sb.click();
+            return;
+        }
+
+        const ed = document.querySelector('rich-textarea .ql-editor') || document.querySelector('div.ql-editor');
+        if (!ed) return;
+        ed.focus({ preventScroll: true });
+
+        setTimeout(() => {
+            const sb2 = document.querySelector('button.send-button.submit, button[data-test-id="send-button"]');
+            if (sb2) {
+                sb2.disabled = false;
+                sb2.removeAttribute('disabled');
+                sb2.click();
+                return;
+            }
+            const ae = document.activeElement;
+            if (ae === document.body || ae === ed || ed.contains(ae)) {
+                ed.dispatchEvent(new KeyboardEvent('keydown', {
+                    key: 'Enter', code: 'Enter',
+                    keyCode: 13, which: 13,
+                    bubbles: true, cancelable: true
+                }));
+            }
+        }, 80);
+    }
+
+    function triggerRegen2() {
+        const conts = document.querySelectorAll('model-response, .model-response-container, .response-container');
+        const last = conts.length ? conts[conts.length - 1] : document;
+        const btn = last.querySelector('[aria-label="Refazer"], [aria-label="Regenerate"], gem-icon-button[data-test-id="regenerate-button"], button[aria-label="Refazer"]');
+        
+        if (btn) {
+            iState2.bypassMode = false;
+            btn.click();
+            setTimeout(() => {
+                const items = Array.from(document.querySelectorAll('gem-menu-item, gem-menu-item-content, [data-test-id="regenerate-option"]'));
+                const opt = items.find(el => el.innerText?.includes('Tentar de novo') || el.innerText?.includes('Regenerate') || el.getAttribute('data-test-id') === 'regenerate-option') || items[0];
+                if (opt) opt.click();
+            }, 350);
+        } else {
+            setTimeout(() => {
+                const btnRetry = document.querySelector('[aria-label="Refazer"], [aria-label="Regenerate"], gem-icon-button[data-test-id="regenerate-button"], button[aria-label="Refazer"]');
+                if (!btnRetry && iState2.run) {
+                    win.giReplayLastRequest();
+                }
+            }, 1500);
+        }
+    }
+
+    function iOnSuccess2() {
+        if (iState2.batchMode) {
+            iState2.currentSuccess++;
+            updateDisplay2();
+            if (iState2.currentSuccess >= iState2.targetSuccess) {
+                iSetFinal2('ok');
+            } else {
+                iState2.retry = 1;
+                iState2.imgFound = false;
+                iState2.processed = false;
+                iState2.genStartTime = Date.now();
+                setTimeout(triggerRegen2, 1000);
+            }
+        } else {
+            iSetFinal2('ok');
+        }
+    }
+
+    function iOnFail2() {
+        if (iState2.retry < iState2.max) {
+            iState2.retry++;
+            iState2.imgFound = false;
+            iState2.processed = false;
+            iState2.genStartTime = Date.now();
+            updateDisplay2();
+            setTimeout(triggerRegen2, 1000);
+        } else {
+            iSetFinal2('fail');
+        }
+    }
+
+    function engineCheck2() {
+        if (!iState2.run) return;
+
+        if (Date.now() - iState2.genStartTime > 45000 && !iState2.processed && !iState2.bypassMode) {
+            iState2.processed = true;
+            iOnFail2();
+            return;
+        }
+
+        const conts = document.querySelectorAll('model-response, .model-response-container, .response-container');
+        const last = conts.length ? conts[conts.length - 1] : null;
+        if (!last) return;
+
+        const mdBox = last.querySelector('.markdown[aria-busy="false"]');
+        if (mdBox) {
+            const textContent = mdBox.innerText ? mdBox.innerText.trim() : '';
+            if (textContent.length > 0 && !iState2.imgFound && !iState2.processed) {
+                iState2.processed = true;
+                iOnFail2();
+            }
+        }
+    }
+
+    function iStart2() {
+        iState2.run = true;
+        iState2.retry = 1;
+        iState2.finalState = null;
+        iState2.genStartTime = Date.now();
+        iState2.imgFound = false;
+        iState2.processed = false;
+        iState2.bypassMode = false;
+
+        ui2.bg.classList.add('active');
+        ui2.bg.classList.remove('ok', 'fail', 'generating');
+        ui2.bg.classList.add('generating');
+        updateDisplay2();
+
+        if (engineTimer2) clearInterval(engineTimer2);
+        engineTimer2 = setInterval(engineCheck2, 1000);
+    }
+
+    function iSetFinal2(result) {
+        iState2.run = false;
+        iState2.finalState = result;
+        if (engineTimer2) { clearInterval(engineTimer2); engineTimer2 = null; }
+        ui2.bg.classList.remove('active', 'generating');
+        ui2.inp.style.display = 'none';
+        ui2.txt.style.display = 'flex';
+        isInputActive = false;
+        if (result === 'ok') {
+            ui2.bg.classList.add('ok');
+            ui2.txt.textContent = iState2.batchMode ? `${iState2.currentSuccess}/${iState2.targetSuccess}` : 'OK';
+            document.title = 'Sucesso';
+        } else {
+            ui2.bg.classList.add('fail');
+            ui2.txt.textContent = iState2.batchMode ? `${iState2.currentSuccess}/${iState2.targetSuccess}` : 'X';
+            document.title = 'Falha';
+        }
+    }
+
+    function iReset2() {
+        iState2.run = false;
+        iState2.finalState = null;
+        iState2.inputStage = 0;
+        isInputActive = false;
+        if (engineTimer2) { clearInterval(engineTimer2); engineTimer2 = null; }
+        ui2.bg.classList.remove('active', 'ok', 'fail', 'generating');
+        ui2.txt.textContent = '⏻';
+        document.title = originalTitle2;
+    }
+
+    function toggleInput2(show, ph = 'IMG') {
+        isInputActive = show;
+        ui2.txt.style.display = show ? 'none' : 'flex';
+        ui2.inp.style.display = show ? 'flex' : 'none';
+        if (show) {
+            ui2.bg.classList.add('active');
+            ui2.inp.placeholder = ph;
+            setTimeout(() => ui2.inp.focus(), 10);
+        } else if (!iState2.run) {
+            ui2.bg.classList.remove('active');
+        }
+    }
+
+    function hideInput2() { 
+        ui2.inp.value = ''; 
+        iState2.inputStage = 0; 
+        toggleInput2(false);
+        iReset2();
+    }
+
+    function showInput2(ph = 'IMG') {
+        toggleInput2(true, ph);
+    }
+
+    function handleClick2() {
+        if (iState2.run) { iReset2(); return; }
+        if (isInputActive) { hideInput2(); return; }
+
+        ui2.bg.classList.remove('ok', 'fail');
+        iState2.inputStage = 1;
+        iState2.batchMode = false;
+        showInput2('#');
+    }
+
+    function handleRightClick2() {
+        if (iState2.run) { iReset2(); return; }
+        if (isInputActive) { hideInput2(); return; }
+
+        ui2.bg.classList.remove('ok', 'fail');
+        iState2.inputStage = 1;
+        iState2.batchMode = true;
+        showInput2('Imgs?');
+    }
+
+    function handleEnter2() {
+        const val = parseInt(ui2.inp.value, 10);
+        if (iState2.inputStage === 1) {
+            if (val > 0 && iState2.batchMode) {
+                iState2.tempTarget = val;
+                ui2.inp.value = '';
+                showInput2('Retries?');
+                iState2.inputStage = 2;
+                return;
+            }
+            iState2.max = val > 0 ? val : 1;
+            iState2.targetSuccess = 1; iState2.batchMode = false; iState2.currentSuccess = 0; ui2.inp.value = ''; iState2.inputStage = 0; toggleInput2(false); initAudioWakeLock(); setTimeout(triggerSend2, 50); setTimeout(iStart2, 900);
+            return;
+        }
+        if (iState2.inputStage === 2 && val > 0) { iState2.max = val; iState2.targetSuccess = iState2.tempTarget; iState2.batchMode = true; iState2.currentSuccess = 0; ui2.inp.value = ''; iState2.inputStage = 0; toggleInput2(false); initAudioWakeLock(); setTimeout(triggerSend2, 50); setTimeout(iStart2, 900); }
+    }
+
+    function setupUI2() { 
+        ui2.wrap.id = 'controlWrapper2'; 
+        ui2.bg.id = 'autoRetryIndicatorBG2'; 
+        ui2.txt.id = 'statusText2'; 
+        ui2.txt.textContent = '⏻'; 
+        ui2.inp.id = 'retryInput2'; 
+        ui2.inp.type = 'text'; 
+        ui2.inp.placeholder = 'IMG'; 
+        ui2.inp.style.display = 'none'; 
+        ui2.wrap.append(ui2.bg, ui2.txt, ui2.inp); 
+        document.body.appendChild(ui2.wrap); 
+        ui2.wrap.onclick = e => { if (e.target !== ui2.inp) handleClick2(); }; 
+        ui2.wrap.oncontextmenu = e => { e.preventDefault(); handleRightClick2(); }; 
+        ui2.inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') handleEnter2(); }; 
+        ui2.inp.oninput = e => e.target.value = e.target.value.replace(/[^0-9]/g, ''); 
+        document.addEventListener('click', e => { if (isInputActive && !ui2.wrap.contains(e.target)) { hideInput2(); } }, true); 
+        window.addEventListener('focus', () => { 
+            if (isFakeFocus) return; 
+            if (document.title === 'Sucesso' || document.title === 'Falha') { 
+                document.title = originalTitle2; 
+            } 
+        }); 
+    }
+
+    const observer = new MutationObserver(() => {
+        if (document.body && !document.getElementById('controlWrapper2')) {
+            observer.disconnect();
+            setupUI2();
+        }
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    if (document.body && !document.getElementById('controlWrapper2')) setupUI2();
+
+})();
